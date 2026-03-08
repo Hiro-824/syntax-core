@@ -1,10 +1,5 @@
-import * as parser from "./core/parser.js";
-import { CFG } from "./grammars/cfg/cfg.js";
-import { HPSG } from "./grammars/hpsg/hpsg.js";
+export { parse } from "./core/parser.js";
+export type { Grammar, Node } from "./core/parser.js";
 
-export { parser };
-
-export const grammars = {
-    CFG,
-    HPSG,
-};
+export { CFG } from "./grammars/cfg/cfg.js";
+export { HPSG } from "./grammars/hpsg/hpsg.js";
