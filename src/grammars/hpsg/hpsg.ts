@@ -300,8 +300,8 @@ export class HPSG implements Grammar<FeatureStructure> {
                 if (ruleName === "head-specifier") this.enforceBindingTheory(targetMother);
                 console.log(`Rule applied: ${ruleName}`);
                 results.push({ category: targetMother, rule: ruleName });
-            } catch (e) {
-                console.log(`Rule not applied: ${ruleName}, ${e}`);
+            } catch {
+                // Rule application failure is expected for many candidates.
             }
         }
 
