@@ -8,7 +8,3 @@ export const grammars = {
     CFG,
     HPSG,
 };
-
-export function helloSyntaxCore(): string {
-    return "syntax-core is ready";
-}
