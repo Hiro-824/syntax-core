@@ -2,6 +2,7 @@ import { Grammar } from "../../core/parser.js";
 import { FeatureStructure, FeatureStructureInput } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { lexiconData, LexiconDefinition } from "./lexicon.js";
+import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData } from "./rules.js";
 import { typeDefinition } from "./types.js";
 
@@ -10,47 +11,6 @@ export class HPSG implements Grammar<FeatureStructure> {
     types: TypeSystem = new TypeSystem();
     private _lexicon: Map<string, FeatureStructure[]> = new Map();
     private _rules: Map<string, FeatureStructure> = new Map();
-
-    private getRestr(expr: FeatureStructure): FeatureStructure {
-        const restr = expr.getIn(["SEM", "RESTR"]);
-        return restr ?? new FeatureStructure("pred-list-empty");
-    }
-
-    private concatPredList(prefix: FeatureStructure, suffix: FeatureStructure): FeatureStructure {
-        const p = prefix.dereference();
-        const s = suffix.dereference();
-
-        const t = p.getType();
-        if (t === "pred-list-empty") return s;
-        if (t !== "pred-list-cons") {
-            throw new Error(`Unsupported pred-list type for concatenation: ${t}`);
-        }
-
-        const first = p.get("FIRST");
-        if (!first) {
-            throw new Error(`Malformed pred-list-cons: missing FIRST`);
-        }
-
-        const rest = p.get("REST");
-        const newRest = rest ? this.concatPredList(rest, s) : s;
-
-        const out = new FeatureStructure("pred-list-cons");
-        out.add("FIRST", first, this.types);
-        out.add("REST", newRest, this.types);
-        return out;
-    }
-
-    private setMotherRestrAsSum(mother: FeatureStructure, head: FeatureStructure, nonHead: FeatureStructure): void {
-        const headRestr = this.getRestr(head);
-        const nonHeadRestr = this.getRestr(nonHead);
-        const summed = this.concatPredList(headRestr, nonHeadRestr);
-
-        const motherSem = mother.get("SEM");
-        if (!motherSem) {
-            throw new Error("Mother is missing SEM");
-        }
-        motherSem.add("RESTR", summed, this.types);
-    }
 
     private ensureRelnSubtype(relnName: string): void {
         if (relnName === "reln") return;
@@ -102,103 +62,6 @@ export class HPSG implements Grammar<FeatureStructure> {
         return relns;
     }
 
-    private linearizeList(list: FeatureStructure): FeatureStructure[] {
-        const linear: FeatureStructure[] = [];
-        if (!this.types.isSubtype(list.getType(), "exp-list")) {
-            throw new Error(`Cannot linearize non exp-list: ${list.getType()}`);
-        }
-
-        let node = list.dereference();
-        while (node.getType() === "exp-list-cons") {
-            const first = node.get("FIRST");
-            const rest = node.get("REST");
-            if (!first || !rest) {
-                throw new Error("Malformed exp-list-cons: missing FIRST and/or REST");
-            }
-            linear.push(first);
-            node = rest.dereference();
-        }
-
-        if (node.getType() !== "exp-list-empty") {
-            throw new Error(`Malformed exp-list: expected exp-list-empty, got ${node.getType()}`);
-        }
-
-        return linear;
-    }
-
-    // anaphorがあったらとりあえずどれかのantecedent候補とcoindexさせるだけなので、厳密なbinding theoryではない。
-    private enforceBindingTheory(mother: FeatureStructure): void {
-        const argSt = mother.get("ARG-ST");
-        if (!argSt) {
-            throw new Error("Mother is missing ARG-ST.");
-        }
-
-        const args = this.linearizeList(argSt);
-        const agrLeafTypes = new Set(["1sing", "2sing", "3sing", "plural"]);
-
-        const getOrCreateIndex = (expr: FeatureStructure): FeatureStructure => {
-            const sem = expr.get("SEM");
-            if (!sem) {
-                throw new Error("Expression is missing SEM.");
-            }
-            const existing = sem.get("INDEX");
-            if (existing) return existing;
-
-            const created = new FeatureStructure("index");
-            sem.add("INDEX", created, this.types);
-            return created;
-        };
-
-        const canUnify = (a: FeatureStructure, b: FeatureStructure): boolean => {
-            const aCopy = a.deepCopy(new Map(), this.types);
-            const bCopy = b.deepCopy(new Map(), this.types);
-            try {
-                FeatureStructure.unify(aCopy, bCopy, this.types);
-                return true;
-            } catch {
-                return false;
-            }
-        };
-
-        for (let i = 0; i < args.length; i++) {
-            const ana = args[i];
-
-            const mode = ana.getIn(["SEM", "MODE"]);
-            if (!mode) continue;
-            if (mode.dereference().getType() !== "ana") continue;
-
-            const anaAgr = ana.getIn(["SYN", "HEAD", "AGR"]);
-            if (!anaAgr) {
-                throw new Error("An anaphor is missing SYN.HEAD.AGR.");
-            }
-            const anaAgrType = anaAgr.dereference().getType();
-            if (!agrLeafTypes.has(anaAgrType)) {
-                throw new Error(`An anaphor has underspecified AGR: ${anaAgrType}`);
-            }
-
-            const anaIndex = getOrCreateIndex(ana);
-
-            let antecedent: FeatureStructure | undefined;
-            for (let j = i - 1; j >= 0; j--) {
-                const ant = args[j];
-                const antAgr = ant.getIn(["SYN", "HEAD", "AGR"]);
-                if (!antAgr) continue;
-                if (!canUnify(anaAgr, antAgr)) continue;
-
-                const antIndex = getOrCreateIndex(ant);
-
-                antecedent = ant;
-
-                FeatureStructure.unify(anaAgr, antAgr, this.types);
-                FeatureStructure.unify(anaIndex, antIndex, this.types);
-                break;
-            }
-
-            if (!antecedent) {
-                throw new Error(`No antecedent for anaphor in ARG-ST (AGR=${anaAgrType}).`);
-            }
-        }
-    }
 
     loadLexicon(definition: LexiconDefinition): void {
         for (const relnName of this.collectRelnTypesFromLexicon(definition)) {
@@ -296,8 +159,13 @@ export class HPSG implements Grammar<FeatureStructure> {
             try {
                 FeatureStructure.unify(targetHead, candidateHead, this.types);
                 FeatureStructure.unify(targetNonHead, candidateNonHead, this.types);
-                this.setMotherRestrAsSum(targetMother, candidateHead, candidateNonHead);
-                if (ruleName === "head-specifier") this.enforceBindingTheory(targetMother);
+                applyHpsgPrinciples({
+                    ruleName,
+                    mother: targetMother,
+                    head: candidateHead,
+                    nonHead: candidateNonHead,
+                    types: this.types,
+                });
                 results.push({ category: targetMother, rule: ruleName });
             } catch {
                 // Rule application failure is expected for many candidates.
