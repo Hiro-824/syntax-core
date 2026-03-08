@@ -1,7 +1,7 @@
-import { grammars, parser } from "./index.js";
+import { CFG, HPSG, parse, Node } from "./index.js";
 
 function formatTree<T>(
-    node: parser.Node<T>,
+    node: Node<T>,
     motherToString: (mother: T) => string,
     depth: number = 0
 ): string {
@@ -20,8 +20,8 @@ function formatTree<T>(
 
 function runCFGDemo(): void {
     const sentence = ["john", "sees", "mary"];
-    const grammar = new grammars.CFG();
-    const trees = parser.parse(sentence, grammar);
+    const grammar = new CFG();
+    const trees = parse(sentence, grammar);
 
     console.log(`\n[CFG] ${sentence.join(" ")}`);
     console.log(`parses: ${trees.length}`);
@@ -33,8 +33,8 @@ function runCFGDemo(): void {
 
 function runHPSGDemo(): void {
     const sentence = ["john", "sees", "mary"];
-    const grammar = new grammars.HPSG();
-    const trees = parser.parse(sentence, grammar);
+    const grammar = new HPSG();
+    const trees = parse(sentence, grammar);
 
     console.log(`\n[HPSG] ${sentence.join(" ")}`);
     console.log(`parses: ${trees.length}`);
