@@ -32,7 +32,7 @@ function runCFGDemo(): void {
 }
 
 function runHPSGDemo(): void {
-    const sentence = ["john", "sees", "mary"];
+    const sentence = ["you", "see", "yourself"];
     const grammar = new HPSG();
     const trees = parse(sentence, grammar);
 

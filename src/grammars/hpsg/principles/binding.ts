@@ -32,7 +32,6 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
     }
 
     const args = linearizeList(argSt, types);
-    const agrLeafTypes = new Set(["1sing", "2sing", "3sing", "plural"]);
 
     const getOrCreateIndex = (expr: FeatureStructure): FeatureStructure => {
         const sem = expr.get("SEM");
@@ -70,8 +69,8 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
             throw new Error("An anaphor is missing SYN.HEAD.AGR.");
         }
         const anaAgrType = anaAgr.dereference().getType();
-        if (!agrLeafTypes.has(anaAgrType)) {
-            throw new Error(`An anaphor has underspecified AGR: ${anaAgrType}`);
+        if (!types.isSubtype(anaAgrType, "agr-cat")) {
+            throw new Error(`An anaphor has invalid AGR: ${anaAgrType}`);
         }
 
         const anaIndex = getOrCreateIndex(ana);
