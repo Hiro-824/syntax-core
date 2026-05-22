@@ -6,13 +6,9 @@ import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData } from "./rules.js";
 import { typeDefinition } from "./types.js";
 
-export class HPSGLexicon implements Lexicon<FeatureStructure> {
-    private _lexicon: Map<string, FeatureStructure[]> = new Map();
-
-    constructor(private types: TypeSystem, definition: LexiconDefinition = lexiconData) {
-        this.loadLexicon(definition);
-    }
-
+export class HPSGLexicalEntryCompiler {
+    constructor(private types: TypeSystem) {}
+    
     private ensureRelnSubtype(relnName: string): void {
         if (relnName === "reln") return;
 
@@ -28,7 +24,7 @@ export class HPSGLexicon implements Lexicon<FeatureStructure> {
         this.types.addType(relnName, "reln");
     }
 
-    private collectRelnTypesFromLexicon(definition: LexiconDefinition): Set<string> {
+    private collectRelnTypes(input: unknown): Set<string> {
         const relns = new Set<string>();
 
         const visit = (node: unknown) => {
@@ -48,25 +44,42 @@ export class HPSGLexicon implements Lexicon<FeatureStructure> {
             }
         };
 
-        for (const fsDefs of Object.values(definition)) {
-            for (const fsDef of fsDefs) visit(fsDef);
-        }
-
+        visit(input);
         return relns;
     }
 
-
-    loadLexicon(definition: LexiconDefinition): void {
-        for (const relnName of this.collectRelnTypesFromLexicon(definition)) {
+    prepareTypes(input: FeatureStructureInput): void {
+        for (const relnName of this.collectRelnTypes(input)) {
             this.ensureRelnSubtype(relnName);
         }
+    }
 
+    compile(input: FeatureStructureInput): FeatureStructure {
+        this.prepareTypes(input);
+        return FeatureStructure.fromJSON(input, this.types);
+    }
+
+    compileMany(inputs: FeatureStructureInput[]): FeatureStructure[] {
+        return inputs.map(input => this.compile(input));
+    }
+}
+
+export class HPSGLexicon implements Lexicon<FeatureStructure> {
+    private _lexicon: Map<string, FeatureStructure[]> = new Map();
+    private compiler: HPSGLexicalEntryCompiler;
+
+    constructor(private types: TypeSystem, definition: LexiconDefinition = lexiconData) {
+        this.compiler = new HPSGLexicalEntryCompiler(types);
+        this.loadLexicon(definition);
+    }
+
+    loadLexicon(definition: LexiconDefinition): void {
         for (const [word, fsDefs] of Object.entries(definition)) {
             const fsList: FeatureStructure[] = [];
 
             for (const fsDef of fsDefs) {
                 try {
-                    const fs = FeatureStructure.fromJSON(fsDef, this.types);
+                    const fs = this.compiler.compile(fsDef);
                     fsList.push(fs);
                 } catch (e) {
                     console.error(`Error loading lexical entry for word "${word}":`, e);
