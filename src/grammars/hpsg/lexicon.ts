@@ -565,14 +565,14 @@ export const lexiconData: LexiconDefinition = {
                         "type": "exp-list-cons",
                         "FIRST": {
                             "type": "expression",
-                            "_id": "arg_spr_0",
+                            "_id": "arg_comp_0",
                             "SYN": {
                                 "type": "syn-cat",
                                 "HEAD": { "type": "prep" }
                             },
                             "SEM": {
                                 "type": "sem-cat",
-                                "INDEX": { "type": "index", "_id": "i" }
+                                "INDEX": { "type": "index", "_id": "j" }
                             }
                         },
                         "REST": "exp-list-empty"
@@ -617,14 +617,14 @@ export const lexiconData: LexiconDefinition = {
                         "type": "exp-list-cons",
                         "FIRST": {
                             "type": "expression",
-                            "_id": "arg_spr_0",
+                            "_id": "arg_comp_0",
                             "SYN": {
                                 "type": "syn-cat",
                                 "HEAD": { "type": "prep" }
                             },
                             "SEM": {
                                 "type": "sem-cat",
-                                "INDEX": { "type": "index", "_id": "i" }
+                                "INDEX": { "type": "index", "_id": "j" }
                             }
                         },
                         "REST": "exp-list-empty"
