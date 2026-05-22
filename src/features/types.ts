@@ -66,6 +66,10 @@ export class TypeSystem {
         return null
     }
 
+    hasType(type: TypeName): boolean {
+        return this._typeHierarchy.has(type);
+    }
+
     loadDefinition(json: Record<string, { parent: TypeName, features?: Record<Attribute, TypeName> }>): void {
         const typeNames = Object.keys(json);
 

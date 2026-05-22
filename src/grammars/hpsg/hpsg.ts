@@ -15,15 +15,7 @@ export class HPSG implements Grammar<FeatureStructure> {
     private ensureRelnSubtype(relnName: string): void {
         if (relnName === "reln") return;
 
-        const hierarchy: unknown = (this.types as unknown as { _typeHierarchy?: unknown })._typeHierarchy;
-        const hasType =
-            hierarchy instanceof Map
-                ? hierarchy.has(relnName)
-                : typeof (hierarchy as { has?: unknown } | undefined)?.has === "function"
-                    ? (hierarchy as { has: (k: string) => boolean }).has(relnName)
-                    : false;
-
-        if (hasType) {
+        if (this.types.hasType(relnName)) {
             if (!this.types.isSubtype(relnName, "reln")) {
                 console.warn(
                     `Type "${relnName}" already exists but is not a subtype of "reln"; skipping auto-add.`
@@ -31,7 +23,7 @@ export class HPSG implements Grammar<FeatureStructure> {
             }
             return;
         }
-
+        
         this.types.addType(relnName, "reln");
     }
 
