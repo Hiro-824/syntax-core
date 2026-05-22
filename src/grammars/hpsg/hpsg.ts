@@ -1,4 +1,4 @@
-import { Grammar } from "../../core/parser.js";
+import { Grammar, Lexicon } from "../../core/parser.js";
 import { FeatureStructure, FeatureStructureInput } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { lexiconData, LexiconDefinition } from "./lexicon.js";
@@ -6,7 +6,7 @@ import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData } from "./rules.js";
 import { typeDefinition } from "./types.js";
 
-export class HPSG implements Grammar<FeatureStructure> {
+export class HPSG implements Grammar<FeatureStructure>, Lexicon<FeatureStructure> {
 
     types: TypeSystem = new TypeSystem();
     private _lexicon: Map<string, FeatureStructure[]> = new Map();

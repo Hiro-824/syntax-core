@@ -1,7 +1,10 @@
 export interface Grammar<T> {
+    combine(left: T, right: T): { category: T; rule: string }[];
+}
+
+export interface Lexicon<T> {
     getAvailableWords(): string[];
     getTerminalCategories(word: string): T[];
-    combine(left: T, right: T): { category: T; rule: string }[];
 }
 
 export type Node<T> = {
@@ -12,8 +15,24 @@ export type Node<T> = {
     rule: string;
 }
 
-export function parse<T>(words: string[], grammar: Grammar<T>): Node<T>[] {
-    const length = words.length;
+export function parse<T>(
+    words: string[],
+    grammar: Grammar<T>,
+    lexicon: Lexicon<T>
+): Node<T>[] {
+    const terminals = words.map(word =>
+        lexicon.getTerminalCategories(word).map(cat => ({
+            mother: cat,
+            token: word,
+            rule: "terminal",
+        }))
+    );
+
+    return parseFromTerminalNodes(terminals, grammar);
+}
+
+export function parseFromTerminalNodes<T>(terminals: Node<T>[][], grammar: Grammar<T>): Node<T>[] {
+    const length = terminals.length;
     if (length === 0) return [];
 
     const chart: Node<T>[][][] = Array.from({ length }, () =>
@@ -21,8 +40,7 @@ export function parse<T>(words: string[], grammar: Grammar<T>): Node<T>[] {
     );
 
     for (let i = 0; i < length; i++) {
-        const categories = grammar.getTerminalCategories(words[i]);
-        chart[0][i] = categories.map(cat => ({ mother: cat, token: words[i], rule: "terminal" }));
+        chart[0][i] = terminals[i];
     }
 
     for (let spanLength = 2; spanLength <= length; spanLength++) {
