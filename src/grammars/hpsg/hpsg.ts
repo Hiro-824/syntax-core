@@ -6,11 +6,12 @@ import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData } from "./rules.js";
 import { typeDefinition } from "./types.js";
 
-export class HPSG implements Grammar<FeatureStructure>, Lexicon<FeatureStructure> {
-
-    types: TypeSystem = new TypeSystem();
+export class HPSGLexicon implements Lexicon<FeatureStructure> {
     private _lexicon: Map<string, FeatureStructure[]> = new Map();
-    private _rules: Map<string, FeatureStructure> = new Map();
+
+    constructor(private types: TypeSystem, definition: LexiconDefinition = lexiconData) {
+        this.loadLexicon(definition);
+    }
 
     private ensureRelnSubtype(relnName: string): void {
         if (relnName === "reln") return;
@@ -81,23 +82,6 @@ export class HPSG implements Grammar<FeatureStructure>, Lexicon<FeatureStructure
         }
     }
 
-    loadRules(schemas: Record<string, FeatureStructureInput>) {
-        for (const [name, schema] of Object.entries(schemas)) {
-            try {
-                const fs = FeatureStructure.fromJSON(schema, this.types);
-                this._rules.set(name, fs);
-            } catch (e) {
-                console.error(`Failed to load rule ${name}:`, e);
-            }
-        }
-    }
-
-    constructor() {
-        this.types.loadDefinition(typeDefinition);
-        this.loadLexicon(lexiconData);
-        this.loadRules(ruleData);
-    }
-
     getAvailableWords(): string[] {
         return Array.from(this._lexicon.keys());
     }
@@ -107,6 +91,28 @@ export class HPSG implements Grammar<FeatureStructure>, Lexicon<FeatureStructure
         if (!masters) return [];
 
         return masters.map(fs => fs.deepCopy(new Map(), this.types));
+    }
+}
+
+export class HPSG implements Grammar<FeatureStructure> {
+
+    types: TypeSystem = new TypeSystem();
+    private _rules: Map<string, FeatureStructure> = new Map();
+
+    constructor() {
+        this.types.loadDefinition(typeDefinition);
+        this.loadRules(ruleData);
+    }
+
+    loadRules(schemas: Record<string, FeatureStructureInput>) {
+        for (const [name, schema] of Object.entries(schemas)) {
+            try {
+                const fs = FeatureStructure.fromJSON(schema, this.types);
+                this._rules.set(name, fs);
+            } catch (e) {
+                console.error(`Failed to load rule ${name}:`, e);
+            }
+        }
     }
 
     combine(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {

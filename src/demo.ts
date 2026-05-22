@@ -1,4 +1,4 @@
-import { CFG, CFGLexicon, HPSG, parse, Node } from "./index.js";
+import { CFG, CFGLexicon, HPSG, HPSGLexicon, parse, Node } from "./index.js";
 
 function formatTree<T>(
     node: Node<T>,
@@ -35,7 +35,8 @@ function runCFGDemo(): void {
 function runHPSGDemo(): void {
     const sentence = ["you", "see", "yourself"];
     const grammar = new HPSG();
-    const trees = parse(sentence, grammar, grammar);
+    const lexicon = new HPSGLexicon(grammar.types);
+    const trees = parse(sentence, grammar, lexicon);
 
     console.log(`\n[HPSG] ${sentence.join(" ")}`);
     console.log(`parses: ${trees.length}`);
