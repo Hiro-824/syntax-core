@@ -105,6 +105,7 @@ export type ConstLexemeInput = LexemeBase & {
         | "part-lxm";
     word: string;
     entry: FeatureStructureInput;
+    mod?: ModifierTargetSpec | ModifierTargetSpec[];
 };
 
 export type ParticipleLexemeInput = ConstLexemeInput & {
@@ -117,6 +118,11 @@ export type ParticipleLexemeInput = ConstLexemeInput & {
 export type ParticipleLexicalRuleInput = {
     lexeme: VerbLexemeInput;
     word: string;
+};
+
+export type ModifierTargetSpec = {
+    head: FeatureStructureInput;
+    indexId?: string;
 };
 
 function consList(items: FeatureStructureInput[], emptyType: "exp-list-empty" | "pred-list-empty"): FeatureStructureInput {
@@ -148,6 +154,88 @@ function expressionArg(id: string, head: FeatureStructureInput, indexId: string)
             INDEX: { type: "index", _id: indexId },
         },
     };
+}
+
+function isFeatureStructureAVM(input: FeatureStructureInput): input is FeatureStructureAVM {
+    return typeof input === "object" && input !== null && typeof input.type === "string";
+}
+
+function copyFeatureStructureInput(input: FeatureStructureInput): FeatureStructureInput {
+    if (typeof input === "string") return input;
+
+    const copy: FeatureStructureAVM = { type: input.type };
+    for (const [key, value] of Object.entries(input)) {
+        if (key === "type") continue;
+        copy[key] = isFeatureStructureInput(value)
+            ? copyFeatureStructureInput(value)
+            : Array.isArray(value)
+                ? value.map(item => isFeatureStructureInput(item) ? copyFeatureStructureInput(item) : item)
+                : value;
+    }
+    return copy;
+}
+
+function isFeatureStructureInput(value: unknown): value is FeatureStructureInput {
+    return typeof value === "string" || isFeatureStructureAVM(value as FeatureStructureInput);
+}
+
+function getModifierTargets(lexeme: ConstLexemeInput): ModifierTargetSpec[] {
+    if (lexeme.mod) {
+        return Array.isArray(lexeme.mod) ? lexeme.mod : [lexeme.mod];
+    }
+    if (lexeme.type === "adj-lxm") return [{ head: "noun" }];
+    if (lexeme.type === "adv-lxm") return [{ head: "verb" }];
+    return [];
+}
+
+function modifierTargetExpression(target: ModifierTargetSpec, index: number): FeatureStructureAVM {
+    const expression: FeatureStructureAVM = {
+        type: "expression",
+        SYN: {
+            type: "syn-cat",
+            HEAD: target.head,
+        },
+    };
+
+    if (target.indexId) {
+        expression.SEM = {
+            type: "sem-cat",
+            INDEX: { type: "index", _id: target.indexId },
+        };
+    }
+
+    if (index === 0) return expression;
+    return { ...expression, _id: `mod_target_${index}` };
+}
+
+function withModifierTargets(entry: FeatureStructureInput, targets: ModifierTargetSpec[]): FeatureStructureInput {
+    if (targets.length === 0) return entry;
+    if (!isFeatureStructureAVM(entry)) {
+        throw new Error("Cannot add MOD to a non-AVM lexical entry.");
+    }
+
+    const copy = copyFeatureStructureInput(entry);
+    if (!isFeatureStructureAVM(copy)) {
+        throw new Error("Cannot add MOD to a non-AVM lexical entry.");
+    }
+
+    const syn = isFeatureStructureAVM(copy.SYN as FeatureStructureInput)
+        ? copy.SYN as FeatureStructureAVM
+        : { type: "syn-cat" };
+    const val = isFeatureStructureAVM(syn.VAL as FeatureStructureInput)
+        ? syn.VAL as FeatureStructureAVM
+        : { type: "val-cat" };
+
+    val.SPR ??= "exp-list-empty";
+    val.COMPS ??= "exp-list-empty";
+    val.MOD = consList(
+        targets.map((target, index) => modifierTargetExpression(target, index)),
+        "exp-list-empty",
+    );
+
+    syn.VAL = val;
+    copy.SYN = syn;
+    return copy;
 }
 
 function nounEntry(input: NounLexicalRuleInput, rule: "singular-noun" | "plural-noun"): DerivedLexicalEntry {
@@ -290,7 +378,7 @@ export function constantLexemeLexicalRule(lexeme: ConstLexemeInput): DerivedLexi
         lexemeId: lexeme.id,
         lexemeType: lexeme.type,
         rule: "constant-lexeme",
-        entry: lexeme.entry,
+        entry: withModifierTargets(lexeme.entry, getModifierTargets(lexeme)),
     };
 }
 
