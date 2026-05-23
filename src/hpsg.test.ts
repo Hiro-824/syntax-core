@@ -5,6 +5,7 @@ import {
     buildCompleteLexeme,
 } from "./grammars/hpsg/lexical-entry-generator.js";
 import { lexemeData } from "./grammars/hpsg/lexemes/data.js";
+import { FeatureStructure } from "./features/features.js";
 
 type ParseExpectation = {
     sentence: string;
@@ -16,6 +17,13 @@ function assert(condition: boolean, message: string): void {
     if (!condition) {
         throw new Error(message);
     }
+}
+
+function sameFeatureStructure(
+    left: FeatureStructure | undefined,
+    right: FeatureStructure | undefined
+): boolean {
+    return left !== undefined && right !== undefined && left.dereference() === right.dereference();
 }
 
 function runHpsgParseTests(): void {
@@ -87,6 +95,13 @@ function runLexemeGeneratorTests(): void {
         girl.getIn(["SEM", "RESTR", "FIRST", "RELN"])?.getType() === "girl",
         `girl: expected RELN to be girl.`
     );
+    assert(
+        sameFeatureStructure(
+            girl.getIn(["SEM", "INDEX"]),
+            girl.getIn(["SYN", "VAL", "SPR", "FIRST", "SEM", "INDEX"])
+        ),
+        `girl: expected SEM.INDEX and SPR.FIRST.SEM.INDEX to be shared.`
+    );
 
     const singularGirl = applySingularNounLexicalRule(girl, grammar.types);
     const pluralGirl = applyPluralNounLexicalRule(girl, grammar.types);
@@ -100,6 +115,13 @@ function runLexemeGeneratorTests(): void {
     assert(
         pluralGirl.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "pl",
         `plural girl: expected SYN.HEAD.AGR.NUM to be pl.`
+    );
+    assert(
+        sameFeatureStructure(
+            singularGirl.getIn(["SEM", "INDEX"]),
+            singularGirl.getIn(["SYN", "VAL", "SPR", "FIRST", "SEM", "INDEX"])
+        ),
+        `singular girl: expected SEM.INDEX and SPR.FIRST.SEM.INDEX to remain shared.`
     );
 
     let rejectedMassPlural = false;

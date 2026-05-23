@@ -4,13 +4,14 @@ import { TypeSystem } from "../../../features/types.js";
 function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
     const word = new FeatureStructure("word");
     const source = lexeme.dereference();
+    const copyMemo = new Map<FeatureStructure, FeatureStructure>();
 
     for (const attr of ["SYN", "SEM", "ARG-ST"]) {
         const value = source.get(attr);
         if (!value) {
             throw new Error(`Cannot apply lexical rule: lexeme is missing ${attr}.`);
         }
-        word.add(attr, value.deepCopy(new Map(), types), types);
+        word.add(attr, value.deepCopy(copyMemo, types), types);
     }
 
     return word;
