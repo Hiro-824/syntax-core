@@ -2,7 +2,7 @@ export { createTerminalRules, parse, parseFromTerminalNodes } from "./core/parse
 export type { BinaryRules, Node, TerminalEntry, TerminalRules } from "./core/parser.js";
 
 export { CFG, createCFGTerminalRules } from "./grammars/cfg/cfg.js";
-export { HPSG, HPSGBinaryRules, HPSGLexicalEntryCompiler } from "./grammars/hpsg/hpsg.js";
+export { HPSG, HPSGBinaryRules } from "./grammars/hpsg/hpsg.js";
 export type {
     ConstantLexemeInput,
     ConstantWords,

@@ -1,5 +1,5 @@
 import { BinaryRules } from "../../core/parser.js";
-import { FeatureStructure, FeatureStructureInput } from "../../features/features.js";
+import { FeatureStructure } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { applyConstantLexemeLexicalRule } from "./generation/const-rules.js";
 import {
@@ -55,64 +55,6 @@ export type VerbWords = {
 export type ConstantWords = {
     word: FeatureStructure;
 };
-
-export class HPSGLexicalEntryCompiler {
-    constructor(private types: TypeSystem) {}
-    
-    private ensureRelnSubtype(relnName: string): void {
-        if (relnName === "reln") return;
-
-        if (this.types.hasType(relnName)) {
-            if (!this.types.isSubtype(relnName, "reln")) {
-                console.warn(
-                    `Type "${relnName}" already exists but is not a subtype of "reln"; skipping auto-add.`
-                );
-            }
-            return;
-        }
-        
-        this.types.addType(relnName, "reln");
-    }
-
-    private collectRelnTypes(input: unknown): Set<string> {
-        const relns = new Set<string>();
-
-        const visit = (node: unknown) => {
-            if (typeof node === "string") return;
-            if (Array.isArray(node)) {
-                for (const item of node) visit(item);
-                return;
-            }
-            if (node === null || typeof node !== "object") return;
-
-            for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-                if (key === "RELN" && typeof value === "string" && !value.startsWith("#")) {
-                    relns.add(value);
-                    continue;
-                }
-                visit(value);
-            }
-        };
-
-        visit(input);
-        return relns;
-    }
-
-    prepareTypes(input: FeatureStructureInput): void {
-        for (const relnName of this.collectRelnTypes(input)) {
-            this.ensureRelnSubtype(relnName);
-        }
-    }
-
-    compile(input: FeatureStructureInput): FeatureStructure {
-        this.prepareTypes(input);
-        return FeatureStructure.fromJSON(input, this.types);
-    }
-
-    compileMany(inputs: FeatureStructureInput[]): FeatureStructure[] {
-        return inputs.map(input => this.compile(input));
-    }
-}
 
 export class HPSGBinaryRules implements BinaryRules<FeatureStructure> {
 
@@ -195,21 +137,11 @@ export class HPSGBinaryRules implements BinaryRules<FeatureStructure> {
 export class HPSG {
     readonly types: TypeSystem;
     readonly binaryRules: HPSGBinaryRules;
-    private lexicalEntryCompiler: HPSGLexicalEntryCompiler;
 
     constructor() {
         this.types = new TypeSystem();
         this.types.loadDefinition(typeDefinition);
         this.binaryRules = new HPSGBinaryRules(this.types);
-        this.lexicalEntryCompiler = new HPSGLexicalEntryCompiler(this.types);
-    }
-
-    compileLexicalEntry(input: FeatureStructureInput): FeatureStructure {
-        return this.lexicalEntryCompiler.compile(input);
-    }
-
-    compileLexicalEntries(inputs: FeatureStructureInput[]): FeatureStructure[] {
-        return this.lexicalEntryCompiler.compileMany(inputs);
     }
 
     buildLexeme(input: LexemeInput): FeatureStructure {

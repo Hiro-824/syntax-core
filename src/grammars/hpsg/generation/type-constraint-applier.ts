@@ -1,20 +1,8 @@
 import { FeatureStructure, FeatureStructureInput } from "../../../features/features.js";
 import { TypeSystem } from "../../../features/types.js";
 import { LexemeInput } from "../lexemes/types.js";
+import { ensureLexemeInputRelns } from "../relns.js";
 import { getLexemeConstraintChain } from "./type-constraints.js";
-
-function ensureRelnSubtype(relnName: string, types: TypeSystem): void {
-    if (relnName === "reln") return;
-
-    if (types.hasType(relnName)) {
-        if (!types.isSubtype(relnName, "reln")) {
-            throw new Error(`Type "${relnName}" already exists but is not a subtype of "reln".`);
-        }
-        return;
-    }
-
-    types.addType(relnName, "reln");
-}
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
     if (input.type === "pron-lxm") {
@@ -242,14 +230,7 @@ function applyDefaults(target: FeatureStructure, defaults: FeatureStructure, typ
 }
 
 export function buildCompleteLexeme(input: LexemeInput, types: TypeSystem): FeatureStructure {
-    if (input.reln) {
-        ensureRelnSubtype(input.reln, types);
-    }
-    if (input.type === "pron-lxm" && input.restr) {
-        for (const predication of input.restr) {
-            ensureRelnSubtype(predication.reln, types);
-        }
-    }
+    ensureLexemeInputRelns(types, input);
 
     const chain = getLexemeConstraintChain(input.type);
     const completeLexeme = unifyAll(
