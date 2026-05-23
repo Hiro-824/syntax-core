@@ -18,6 +18,16 @@ function ensureRelnSubtype(relnName: string, types: TypeSystem): void {
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
     if (input.type === "pron-lxm") {
+        const definedIndexes = new Set<string>();
+        const buildIndexValue = (name: string): FeatureStructureInput => {
+            if (definedIndexes.has(name)) return `#${name}`;
+            definedIndexes.add(name);
+            return {
+                "type": "index",
+                "_id": name,
+            };
+        };
+
         const head: FeatureStructureInput = {
             "type": "noun",
         };
@@ -34,16 +44,39 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
             head["AGR"] = agr;
         }
 
+        const sem: FeatureStructureInput = {
+            "type": "sem-cat",
+            "MODE": input.mode ?? "ref",
+        };
+        if (input.index) {
+            definedIndexes.add(input.index);
+            sem["INDEX"] = {
+                "type": "index",
+                "_id": input.index,
+            };
+        }
+        if (input.restr) {
+            sem["RESTR"] = buildPredList(
+                input.restr.map(pred => {
+                    const predication: FeatureStructureInput = {
+                        "type": "predication",
+                        "RELN": pred.reln,
+                    };
+                    if (pred.arg1) predication["ARG1"] = buildIndexValue(pred.arg1);
+                    if (pred.arg2) predication["ARG2"] = buildIndexValue(pred.arg2);
+                    if (pred.arg3) predication["ARG3"] = buildIndexValue(pred.arg3);
+                    return predication;
+                })
+            );
+        }
+
         return {
             "type": input.type,
             "SYN": {
                 "type": "syn-cat",
                 "HEAD": head,
             },
-            "SEM": {
-                "type": "sem-cat",
-                "MODE": input.mode ?? "ref",
-            },
+            "SEM": sem,
         };
     }
 
@@ -157,6 +190,17 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
     };
 }
 
+function buildPredList(predications: FeatureStructureInput[]): FeatureStructureInput {
+    if (predications.length === 0) return "pred-list-empty";
+
+    const [first, ...rest] = predications;
+    return {
+        "type": "pred-list-cons",
+        "FIRST": first!,
+        "REST": buildPredList(rest),
+    };
+}
+
 function fromInput(input: FeatureStructureInput, types: TypeSystem): FeatureStructure {
     return FeatureStructure.fromJSON(input, types);
 }
@@ -200,6 +244,11 @@ function applyDefaults(target: FeatureStructure, defaults: FeatureStructure, typ
 export function buildCompleteLexeme(input: LexemeInput, types: TypeSystem): FeatureStructure {
     if (input.reln) {
         ensureRelnSubtype(input.reln, types);
+    }
+    if (input.type === "pron-lxm" && input.restr) {
+        for (const predication of input.restr) {
+            ensureRelnSubtype(predication.reln, types);
+        }
     }
 
     const chain = getLexemeConstraintChain(input.type);

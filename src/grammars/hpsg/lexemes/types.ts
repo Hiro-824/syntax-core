@@ -56,6 +56,15 @@ export type PronounLexemeInput = ConstantLexemeInputBase & {
     num?: "sg" | "pl";
     gend?: "fem" | "masc" | "neut";
     mode?: "ref" | "ana";
+    index?: string;
+    restr?: PronounRestrInput[];
+};
+
+export type PronounRestrInput = {
+    reln: string;
+    arg1?: string;
+    arg2?: string;
+    arg3?: string;
 };
 
 export type AdjectiveLexemeInput = ConstantLexemeInputBase & {

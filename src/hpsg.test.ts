@@ -72,6 +72,7 @@ runVerbLexemeConstraintTests();
 runVerbLexicalRuleTests();
 runConstantLexemeConstraintTests();
 runConstantLexemeLexicalRuleTests();
+runPronounRestrInputTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -332,6 +333,50 @@ function runConstantLexemeConstraintTests(): void {
     assert(
         sameFeatureStructure(inPrep.getIn(["SYN", "VAL", "COMPS", "FIRST"]), inPrep.getIn(["ARG-ST", "REST", "FIRST"])),
         `in: expected COMPS and ARG-ST second to be shared.`
+    );
+}
+
+function runPronounRestrInputTests(): void {
+    const grammar = new HPSG();
+    const we = grammar.buildLexeme({
+        type: "pron-lxm",
+        form: "we",
+        case: "nom",
+        agr: "plural",
+        per: "1st",
+        num: "pl",
+        index: "group",
+        restr: [
+            { reln: "group", arg1: "group" },
+            { reln: "speaker", arg1: "speaker" },
+            { reln: "member", arg1: "group", arg2: "speaker" },
+        ],
+    });
+
+    assert(we.getIn(["SEM", "RESTR"])?.getType() === "pred-list-cons", `we: expected non-empty RESTR.`);
+    assert(we.getIn(["SEM", "RESTR", "FIRST", "RELN"])?.getType() === "group", `we: expected first RELN group.`);
+    assert(we.getIn(["SEM", "RESTR", "REST", "FIRST", "RELN"])?.getType() === "speaker", `we: expected second RELN speaker.`);
+    assert(we.getIn(["SEM", "RESTR", "REST", "REST", "FIRST", "RELN"])?.getType() === "member", `we: expected third RELN member.`);
+    assert(
+        sameFeatureStructure(
+            we.getIn(["SEM", "INDEX"]),
+            we.getIn(["SEM", "RESTR", "FIRST", "ARG1"])
+        ),
+        `we: expected group predicate ARG1 to share SEM.INDEX.`
+    );
+    assert(
+        sameFeatureStructure(
+            we.getIn(["SEM", "RESTR", "FIRST", "ARG1"]),
+            we.getIn(["SEM", "RESTR", "REST", "REST", "FIRST", "ARG1"])
+        ),
+        `we: expected member ARG1 to share group index.`
+    );
+    assert(
+        sameFeatureStructure(
+            we.getIn(["SEM", "RESTR", "REST", "FIRST", "ARG1"]),
+            we.getIn(["SEM", "RESTR", "REST", "REST", "FIRST", "ARG2"])
+        ),
+        `we: expected member ARG2 to share speaker index.`
     );
 }
 

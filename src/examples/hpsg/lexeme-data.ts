@@ -18,6 +18,10 @@ export const lexemeData: LexemeInput[] = [
         agr: "1sing",
         per: "1st",
         num: "sg",
+        index: "self",
+        restr: [
+            { reln: "speaker", arg1: "self" },
+        ],
     },
     {
         type: "pron-lxm",
@@ -26,6 +30,10 @@ export const lexemeData: LexemeInput[] = [
         agr: "1sing",
         per: "1st",
         num: "sg",
+        index: "self",
+        restr: [
+            { reln: "speaker", arg1: "self" },
+        ],
     },
     {
         type: "pron-lxm",
@@ -33,6 +41,10 @@ export const lexemeData: LexemeInput[] = [
         case: "nom",
         agr: "agr-cat",
         per: "2nd",
+        index: "self",
+        restr: [
+            { reln: "addressee", arg1: "self" },
+        ],
     },
     {
         type: "pron-lxm",
@@ -40,6 +52,24 @@ export const lexemeData: LexemeInput[] = [
         case: "acc",
         agr: "agr-cat",
         per: "2nd",
+        index: "self",
+        restr: [
+            { reln: "addressee", arg1: "self" },
+        ],
+    },
+    {
+        type: "pron-lxm",
+        form: "we",
+        case: "nom",
+        agr: "plural",
+        per: "1st",
+        num: "pl",
+        index: "group",
+        restr: [
+            { reln: "group", arg1: "group" },
+            { reln: "speaker", arg1: "speaker" },
+            { reln: "member", arg1: "group", arg2: "speaker" },
+        ],
     },
     {
         type: "pron-lxm",
