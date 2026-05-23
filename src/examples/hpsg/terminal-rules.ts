@@ -58,6 +58,7 @@ function buildExampleVerbTerminalEntries(
         { terminal: input.base, category: words.nonThirdSingular },
         { terminal: input.thirdSingular, category: words.thirdSingular },
         { terminal: input.presentParticiple, category: words.presentParticiple },
+        { terminal: input.pastTense, category: words.pastTense },
         { terminal: input.pastParticiple, category: words.pastParticiple },
     ];
 }

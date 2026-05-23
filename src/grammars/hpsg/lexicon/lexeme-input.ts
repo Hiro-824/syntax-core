@@ -15,6 +15,7 @@ type VerbLexemeInputBase = {
     base: string;
     thirdSingular: string;
     presentParticiple: string;
+    pastTense: string;
     pastParticiple: string;
     reln: string;
 };

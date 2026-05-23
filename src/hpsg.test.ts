@@ -159,6 +159,7 @@ function runVerbLexemeConstraintTests(): void {
         base: "see",
         thirdSingular: "sees",
         presentParticiple: "seeing",
+        pastTense: "saw",
         pastParticiple: "seen",
         reln: "see",
     }, grammar.types);
@@ -167,6 +168,7 @@ function runVerbLexemeConstraintTests(): void {
         base: "send",
         thirdSingular: "sends",
         presentParticiple: "sending",
+        pastTense: "sent",
         pastParticiple: "sent",
         reln: "send",
     }, grammar.types);
@@ -175,6 +177,7 @@ function runVerbLexemeConstraintTests(): void {
         base: "send",
         thirdSingular: "sends",
         presentParticiple: "sending",
+        pastTense: "sent",
         pastParticiple: "sent",
         reln: "send",
     }, grammar.types);
@@ -263,6 +266,7 @@ function runConstantLexemeLexicalRuleTests(): void {
             base: "see",
             thirdSingular: "sees",
             presentParticiple: "seeing",
+            pastTense: "saw",
             pastParticiple: "seen",
             reln: "see",
         }, grammar.types);
@@ -389,6 +393,7 @@ function runVerbLexicalRuleTests(): void {
         base: "see",
         thirdSingular: "sees",
         presentParticiple: "seeing",
+        pastTense: "saw",
         pastParticiple: "seen",
         reln: "see",
     }, grammar.types);
