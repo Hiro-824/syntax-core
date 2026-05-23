@@ -1,7 +1,7 @@
 import { createTerminalRules, TerminalEntry, TerminalRules } from "../../core/parser.js";
 import { FeatureStructure } from "../../features/features.js";
 import { HPSG, VerbLexemeInput } from "../../grammars/hpsg/hpsg.js";
-import { LexemeInput } from "../../grammars/hpsg/lexemes/types.js";
+import { LexemeInput } from "../../grammars/hpsg/lexicon/lexeme-input.js";
 import { lexemeData } from "./lexeme-data.js";
 
 export function createExampleHpsgTerminalRules(

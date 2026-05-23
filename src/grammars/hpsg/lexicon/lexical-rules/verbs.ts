@@ -1,5 +1,5 @@
-import { FeatureStructure } from "../../../features/features.js";
-import { TypeSystem } from "../../../features/types.js";
+import { FeatureStructure } from "../../../../features/features.js";
+import { TypeSystem } from "../../../../features/types.js";
 
 function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
     return buildSynsemFromLexeme(lexeme, "word", types);

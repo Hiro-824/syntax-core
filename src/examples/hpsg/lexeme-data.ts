@@ -1,4 +1,4 @@
-import { LexemeInput } from "../../grammars/hpsg/lexemes/types.js";
+import { LexemeInput } from "../../grammars/hpsg/lexicon/lexeme-input.js";
 
 export const lexemeData: LexemeInput[] = [
     {

@@ -1,8 +1,8 @@
 import { FeatureStructure, FeatureStructureInput } from "../../../features/features.js";
 import { TypeSystem } from "../../../features/types.js";
-import { LexemeInput } from "../lexemes/types.js";
-import { ensureLexemeInputRelns } from "../relns.js";
-import { getLexemeConstraintChain } from "./type-constraints.js";
+import { LexemeInput } from "./lexeme-input.js";
+import { getLexemeConstraintChain } from "./lexeme-constraints.js";
+import { ensureLexemeInputRelns } from "../type-system/relns.js";
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
     if (input.type === "pron-lxm") {

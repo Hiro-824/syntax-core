@@ -1,5 +1,5 @@
-import { TypeSystem } from "../../features/types.js";
-import { LexemeInput } from "./lexemes/types.js";
+import { TypeSystem } from "../../../features/types.js";
+import { LexemeInput } from "../lexicon/lexeme-input.js";
 
 export function ensureRelnSubtype(types: TypeSystem, relnName: string): void {
     if (relnName === "reln") return;

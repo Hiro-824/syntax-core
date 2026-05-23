@@ -2,7 +2,8 @@ export { createTerminalRules, parse, parseFromTerminalNodes } from "./core/parse
 export type { BinaryRules, Node, TerminalEntry, TerminalRules } from "./core/parser.js";
 
 export { CFG, createCFGTerminalRules } from "./grammars/cfg/cfg.js";
-export { HPSG, HPSGBinaryRules } from "./grammars/hpsg/hpsg.js";
+export { HPSG } from "./grammars/hpsg/hpsg.js";
+export { HPSGBinaryRules } from "./grammars/hpsg/syntax/binary-rules.js";
 export type {
     ConstantLexemeInput,
     ConstantWords,
@@ -11,4 +12,4 @@ export type {
     VerbLexemeInput,
     VerbWords,
 } from "./grammars/hpsg/hpsg.js";
-export type { LexemeInput, PredicationInput } from "./grammars/hpsg/lexemes/types.js";
+export type { LexemeInput, PredicationInput } from "./grammars/hpsg/lexicon/lexeme-input.js";

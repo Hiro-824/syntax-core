@@ -1,16 +1,18 @@
 import { HPSG, parse } from "./index.js";
 import {
-    applyPluralNounLexicalRule,
-    applySingularNounLexicalRule,
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
     applyPastParticipleLexicalRule,
     applyPastTenseVerbLexicalRule,
     applyPresentParticipleLexicalRule,
     applyThirdSingularVerbLexicalRule,
-    applyConstantLexemeLexicalRule,
-    buildCompleteLexeme,
-} from "./grammars/hpsg/lexical-entry-generator.js";
+} from "./grammars/hpsg/lexicon/lexical-rules/verbs.js";
+import {
+    applyPluralNounLexicalRule,
+    applySingularNounLexicalRule,
+} from "./grammars/hpsg/lexicon/lexical-rules/nouns.js";
+import { applyConstantLexemeLexicalRule } from "./grammars/hpsg/lexicon/lexical-rules/constants.js";
+import { buildCompleteLexeme } from "./grammars/hpsg/lexicon/lexeme-builder.js";
 import { lexemeData } from "./examples/hpsg/lexeme-data.js";
 import { createExampleHpsgTerminalRules } from "./examples/hpsg/terminal-rules.js";
 import { FeatureStructure } from "./features/features.js";
