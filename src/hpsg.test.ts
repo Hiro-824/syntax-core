@@ -4,7 +4,9 @@ import {
     applySingularNounLexicalRule,
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
+    applyPastParticipleLexicalRule,
     applyPastTenseVerbLexicalRule,
+    applyPresentParticipleLexicalRule,
     applyThirdSingularVerbLexicalRule,
     applyConstantLexemeLexicalRule,
     buildCompleteLexeme,
@@ -343,6 +345,8 @@ function runVerbLexicalRuleTests(): void {
     const nonThirdSingular = applyNonThirdSingularVerbLexicalRule(see, grammar.types);
     const pastTense = applyPastTenseVerbLexicalRule(see, grammar.types);
     const baseForm = applyBaseFormLexicalRule(see, grammar.types);
+    const presentParticiple = applyPresentParticipleLexicalRule(see, grammar.types);
+    const pastParticiple = applyPastParticipleLexicalRule(see, grammar.types);
 
     assert(thirdSingular.getType() === "word", `third singular see: expected word.`);
     assert(
@@ -376,6 +380,16 @@ function runVerbLexicalRuleTests(): void {
     assert(
         baseForm.getIn(["ARG-ST", "FIRST", "SYN", "HEAD", "CASE"]) === undefined,
         `base form see: expected subject CASE to be unspecified.`
+    );
+    assert(presentParticiple.getType() === "part-lxm", `present participle see: expected part-lxm.`);
+    assert(
+        presentParticiple.getIn(["SYN", "HEAD", "FORM"])?.getType() === "prp",
+        `present participle see: expected FORM prp.`
+    );
+    assert(pastParticiple.getType() === "part-lxm", `past participle see: expected part-lxm.`);
+    assert(
+        pastParticiple.getIn(["SYN", "HEAD", "FORM"])?.getType() === "psp",
+        `past participle see: expected FORM psp.`
     );
     assert(
         sameFeatureStructure(

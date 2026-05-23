@@ -2,7 +2,19 @@ import { FeatureStructure } from "../../../features/features.js";
 import { TypeSystem } from "../../../features/types.js";
 
 function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
-    const word = new FeatureStructure("word");
+    return buildSynsemFromLexeme(lexeme, "word", types);
+}
+
+function buildParticipleLexemeFromVerb(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
+    return buildSynsemFromLexeme(lexeme, "part-lxm", types);
+}
+
+function buildSynsemFromLexeme(
+    lexeme: FeatureStructure,
+    resultType: "word" | "part-lxm",
+    types: TypeSystem
+): FeatureStructure {
+    const result = new FeatureStructure(resultType);
     const source = lexeme.dereference();
     const copyMemo = new Map<FeatureStructure, FeatureStructure>();
 
@@ -11,10 +23,10 @@ function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): Featu
         if (!value) {
             throw new Error(`Cannot apply lexical rule: lexeme is missing ${attr}.`);
         }
-        word.add(attr, value.deepCopy(copyMemo, types), types);
+        result.add(attr, value.deepCopy(copyMemo, types), types);
     }
 
-    return word;
+    return result;
 }
 
 function assertVerbLexeme(lexeme: FeatureStructure, types: TypeSystem, ruleName: string): void {
@@ -55,7 +67,7 @@ function buildExpList(values: FeatureStructure[], types: TypeSystem): FeatureStr
     return list;
 }
 
-function setHeadForm(word: FeatureStructure, form: "base" | "fin", types: TypeSystem): void {
+function setHeadForm(word: FeatureStructure, form: "base" | "fin" | "prp" | "psp", types: TypeSystem): void {
     const head = word.getIn(["SYN", "HEAD"]);
     if (!head) {
         throw new Error("Cannot apply verb lexical rule: word is missing SYN.HEAD.");
@@ -145,4 +157,24 @@ export function applyBaseFormLexicalRule(
     const word = applyVerbRuleBase(lexeme, types, "Base Form Lexical Rule");
     setHeadForm(word, "base", types);
     return word;
+}
+
+export function applyPresentParticipleLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    assertVerbLexeme(lexeme, types, "Present Participle Lexical Rule");
+    const participle = buildParticipleLexemeFromVerb(lexeme, types);
+    setHeadForm(participle, "prp", types);
+    return participle;
+}
+
+export function applyPastParticipleLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    assertVerbLexeme(lexeme, types, "Past Participle Lexical Rule");
+    const participle = buildParticipleLexemeFromVerb(lexeme, types);
+    setHeadForm(participle, "psp", types);
+    return participle;
 }
