@@ -1,4 +1,4 @@
-export interface Grammar<T> {
+export interface BinaryRules<T> {
     combine(left: T, right: T): { category: T; rule: string }[];
 }
 
@@ -17,7 +17,7 @@ export type Node<T> = {
 
 export function parse<T>(
     words: string[],
-    grammar: Grammar<T>,
+    binaryRules: BinaryRules<T>,
     lexicon: Lexicon<T>
 ): Node<T>[] {
     const terminals = words.map(word =>
@@ -28,10 +28,10 @@ export function parse<T>(
         }))
     );
 
-    return parseFromTerminalNodes(terminals, grammar);
+    return parseFromTerminalNodes(terminals, binaryRules);
 }
 
-export function parseFromTerminalNodes<T>(terminals: Node<T>[][], grammar: Grammar<T>): Node<T>[] {
+export function parseFromTerminalNodes<T>(terminals: Node<T>[][], binaryRules: BinaryRules<T>): Node<T>[] {
     const length = terminals.length;
     if (length === 0) return [];
 
@@ -61,7 +61,7 @@ export function parseFromTerminalNodes<T>(terminals: Node<T>[][], grammar: Gramm
                 for (const leftNode of leftNodes) {
 
                     for (const rightNode of rightNodes) {
-                        const results = grammar.combine(leftNode.mother, rightNode.mother);
+                        const results = binaryRules.combine(leftNode.mother, rightNode.mother);
 
                         if (results.length === 0) continue;
 

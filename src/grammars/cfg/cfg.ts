@@ -1,6 +1,6 @@
-import { Grammar, Lexicon } from "../../core/parser.js";
+import { BinaryRules, Lexicon } from "../../core/parser.js";
 
-export class CFG implements Grammar<string> {
+export class CFG implements BinaryRules<string> {
 
     combine(left: string, right: string): { category: string; rule: string }[] {
         if (left === "NP" && right === "VP") return [{ category: "S", rule: "S → NP VP" }];
