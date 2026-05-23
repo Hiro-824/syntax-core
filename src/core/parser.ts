@@ -2,10 +2,7 @@ export interface BinaryRules<T> {
     combine(left: T, right: T): { category: T; rule: string }[];
 }
 
-export interface Lexicon<T> {
-    getAvailableWords(): string[];
-    getTerminalCategories(word: string): T[];
-}
+export type TerminalRules<T> = (terminal: string) => T[];
 
 export type Node<T> = {
     mother: T;
@@ -18,10 +15,10 @@ export type Node<T> = {
 export function parse<T>(
     words: string[],
     binaryRules: BinaryRules<T>,
-    lexicon: Lexicon<T>
+    terminalRules: TerminalRules<T>
 ): Node<T>[] {
     const terminals = words.map(word =>
-        lexicon.getTerminalCategories(word).map(cat => ({
+        terminalRules(word).map(cat => ({
             mother: cat,
             token: word,
             rule: "terminal",

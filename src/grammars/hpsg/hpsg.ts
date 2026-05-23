@@ -1,11 +1,9 @@
-import { BinaryRules, Lexicon } from "../../core/parser.js";
+import { BinaryRules } from "../../core/parser.js";
 import { FeatureStructure, FeatureStructureInput } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData, RuleDefinition } from "./rules.js";
 import { typeDefinition } from "./types.js";
-
-export type LexiconDefinition = Record<string, FeatureStructureInput[]>;
 
 export class HPSGLexicalEntryCompiler {
     constructor(private types: TypeSystem) {}
@@ -62,49 +60,6 @@ export class HPSGLexicalEntryCompiler {
 
     compileMany(inputs: FeatureStructureInput[]): FeatureStructure[] {
         return inputs.map(input => this.compile(input));
-    }
-}
-
-export class HPSGLexicon implements Lexicon<FeatureStructure> {
-    private _lexicon: Map<string, FeatureStructure[]> = new Map();
-    private compiler: HPSGLexicalEntryCompiler;
-
-    constructor(private types: TypeSystem, definition: LexiconDefinition) {
-        this.compiler = new HPSGLexicalEntryCompiler(types);
-        this.loadLexicon(definition);
-    }
-
-    loadLexicon(definition: LexiconDefinition): void {
-        for (const [word, fsDefs] of Object.entries(definition)) {
-            const fsList: FeatureStructure[] = [];
-
-            for (const fsDef of fsDefs) {
-                try {
-                    const fs = this.compiler.compile(fsDef);
-                    fsList.push(fs);
-                } catch (e) {
-                    console.error(`Error loading lexical entry for word "${word}":`, e);
-                }
-            }
-
-            const existing = this._lexicon.get(word);
-            if (existing) {
-                existing.push(...fsList);
-            } else {
-                this._lexicon.set(word, fsList);
-            }
-        }
-    }
-
-    getAvailableWords(): string[] {
-        return Array.from(this._lexicon.keys());
-    }
-
-    getTerminalCategories(word: string): FeatureStructure[] {
-        const masters = this._lexicon.get(word);
-        if (!masters) return [];
-
-        return masters.map(fs => fs.deepCopy(new Map(), this.types));
     }
 }
 
@@ -189,14 +144,20 @@ export class HPSGBinaryRules implements BinaryRules<FeatureStructure> {
 export class HPSG {
     readonly types: TypeSystem;
     readonly binaryRules: HPSGBinaryRules;
+    private lexicalEntryCompiler: HPSGLexicalEntryCompiler;
 
     constructor() {
         this.types = new TypeSystem();
         this.types.loadDefinition(typeDefinition);
         this.binaryRules = new HPSGBinaryRules(this.types);
+        this.lexicalEntryCompiler = new HPSGLexicalEntryCompiler(this.types);
     }
 
-    createLexicon(definition: LexiconDefinition): HPSGLexicon {
-        return new HPSGLexicon(this.types, definition);
+    compileLexicalEntry(input: FeatureStructureInput): FeatureStructure {
+        return this.lexicalEntryCompiler.compile(input);
+    }
+
+    compileLexicalEntries(inputs: FeatureStructureInput[]): FeatureStructure[] {
+        return this.lexicalEntryCompiler.compileMany(inputs);
     }
 }

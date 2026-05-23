@@ -1,5 +1,5 @@
 export { parse, parseFromTerminalNodes } from "./core/parser.js";
-export type { BinaryRules, Lexicon, Node } from "./core/parser.js";
+export type { BinaryRules, Node, TerminalRules } from "./core/parser.js";
 
-export { CFG, CFGLexicon } from "./grammars/cfg/cfg.js";
-export { HPSG, HPSGBinaryRules, HPSGLexicalEntryCompiler, HPSGLexicon } from "./grammars/hpsg/hpsg.js";
+export { CFG, createCFGTerminalRules } from "./grammars/cfg/cfg.js";
+export { HPSG, HPSGBinaryRules, HPSGLexicalEntryCompiler } from "./grammars/hpsg/hpsg.js";

@@ -12,7 +12,7 @@ import {
     buildCompleteLexeme,
 } from "./grammars/hpsg/lexical-entry-generator.js";
 import { lexemeData } from "./examples/hpsg/lexeme-data.js";
-import { lexiconData } from "./examples/hpsg/lexicon-data.js";
+import { createExampleHpsgTerminalRules } from "./examples/hpsg/terminal-rules.js";
 import { FeatureStructure } from "./features/features.js";
 
 type ParseExpectation = {
@@ -36,7 +36,7 @@ function sameFeatureStructure(
 
 function runHpsgParseTests(): void {
     const grammar = new HPSG();
-    const lexicon = grammar.createLexicon(lexiconData);
+    const terminalRules = createExampleHpsgTerminalRules(grammar);
 
     const cases: ParseExpectation[] = [
         { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
@@ -51,7 +51,7 @@ function runHpsgParseTests(): void {
 
     for (const testCase of cases) {
         const words = testCase.sentence.split(" ");
-        const trees = parse(words, grammar.binaryRules, lexicon);
+        const trees = parse(words, grammar.binaryRules, terminalRules);
 
         assert(
             trees.length === testCase.parses,
