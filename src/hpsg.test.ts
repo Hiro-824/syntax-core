@@ -1,4 +1,4 @@
-import { HPSG, HPSGLexicon, parse } from "./index.js";
+import { HPSG, parse } from "./index.js";
 import {
     applyPluralNounLexicalRule,
     applySingularNounLexicalRule,
@@ -36,7 +36,7 @@ function sameFeatureStructure(
 
 function runHpsgParseTests(): void {
     const grammar = new HPSG();
-    const lexicon = new HPSGLexicon(grammar.types, lexiconData);
+    const lexicon = grammar.createLexicon(lexiconData);
 
     const cases: ParseExpectation[] = [
         { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
@@ -51,7 +51,7 @@ function runHpsgParseTests(): void {
 
     for (const testCase of cases) {
         const words = testCase.sentence.split(" ");
-        const trees = parse(words, grammar, lexicon);
+        const trees = parse(words, grammar.binaryRules, lexicon);
 
         assert(
             trees.length === testCase.parses,

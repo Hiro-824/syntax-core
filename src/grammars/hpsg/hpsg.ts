@@ -2,7 +2,7 @@ import { BinaryRules, Lexicon } from "../../core/parser.js";
 import { FeatureStructure, FeatureStructureInput } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { applyHpsgPrinciples } from "./principles/index.js";
-import { ruleData } from "./rules.js";
+import { ruleData, RuleDefinition } from "./rules.js";
 import { typeDefinition } from "./types.js";
 
 export type LexiconDefinition = Record<string, FeatureStructureInput[]>;
@@ -108,17 +108,15 @@ export class HPSGLexicon implements Lexicon<FeatureStructure> {
     }
 }
 
-export class HPSG implements BinaryRules<FeatureStructure> {
+export class HPSGBinaryRules implements BinaryRules<FeatureStructure> {
 
-    types: TypeSystem = new TypeSystem();
     private _rules: Map<string, FeatureStructure> = new Map();
 
-    constructor() {
-        this.types.loadDefinition(typeDefinition);
-        this.loadRules(ruleData);
+    constructor(private types: TypeSystem, schemas: RuleDefinition = ruleData) {
+        this.loadRules(schemas);
     }
 
-    loadRules(schemas: Record<string, FeatureStructureInput>) {
+    loadRules(schemas: RuleDefinition) {
         for (const [name, schema] of Object.entries(schemas)) {
             try {
                 const fs = FeatureStructure.fromJSON(schema, this.types);
@@ -185,5 +183,20 @@ export class HPSG implements BinaryRules<FeatureStructure> {
         }
 
         return results;
+    }
+}
+
+export class HPSG {
+    readonly types: TypeSystem;
+    readonly binaryRules: HPSGBinaryRules;
+
+    constructor() {
+        this.types = new TypeSystem();
+        this.types.loadDefinition(typeDefinition);
+        this.binaryRules = new HPSGBinaryRules(this.types);
+    }
+
+    createLexicon(definition: LexiconDefinition): HPSGLexicon {
+        return new HPSGLexicon(this.types, definition);
     }
 }
