@@ -1,5 +1,9 @@
 import { HPSG, HPSGLexicon, parse } from "./index.js";
-import { buildCompleteLexeme } from "./grammars/hpsg/lexical-entry-generator.js";
+import {
+    applyPluralNounLexicalRule,
+    applySingularNounLexicalRule,
+    buildCompleteLexeme,
+} from "./grammars/hpsg/lexical-entry-generator.js";
 import { lexemeData } from "./grammars/hpsg/lexeme.js";
 
 type ParseExpectation = {
@@ -83,4 +87,26 @@ function runLexemeGeneratorTests(): void {
         girl.getIn(["SEM", "RESTR", "FIRST", "RELN"])?.getType() === "girl",
         `girl: expected RELN to be girl.`
     );
+
+    const singularGirl = applySingularNounLexicalRule(girl, grammar.types);
+    const pluralGirl = applyPluralNounLexicalRule(girl, grammar.types);
+
+    assert(singularGirl.getType() === "word", `singular girl: expected word.`);
+    assert(pluralGirl.getType() === "word", `plural girl: expected word.`);
+    assert(
+        singularGirl.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "sg",
+        `singular girl: expected SYN.HEAD.AGR.NUM to be sg.`
+    );
+    assert(
+        pluralGirl.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "pl",
+        `plural girl: expected SYN.HEAD.AGR.NUM to be pl.`
+    );
+
+    let rejectedMassPlural = false;
+    try {
+        applyPluralNounLexicalRule(water, grammar.types);
+    } catch {
+        rejectedMassPlural = true;
+    }
+    assert(rejectedMassPlural, `water: expected Plural Noun Lexical Rule to reject massn-lxm.`);
 }
