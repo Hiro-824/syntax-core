@@ -2,6 +2,10 @@ import { HPSG, HPSGLexicon, parse } from "./index.js";
 import {
     applyPluralNounLexicalRule,
     applySingularNounLexicalRule,
+    applyBaseFormLexicalRule,
+    applyNonThirdSingularVerbLexicalRule,
+    applyPastTenseVerbLexicalRule,
+    applyThirdSingularVerbLexicalRule,
     buildCompleteLexeme,
 } from "./grammars/hpsg/lexical-entry-generator.js";
 import { lexemeData } from "./grammars/hpsg/lexemes/data.js";
@@ -62,6 +66,7 @@ function runHpsgParseTests(): void {
 runHpsgParseTests();
 runLexemeGeneratorTests();
 runVerbLexemeConstraintTests();
+runVerbLexicalRuleTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -219,5 +224,74 @@ function runVerbLexemeConstraintTests(): void {
             sendPrepositional.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
         ),
         `ptv send: expected third ARG-ST element and ARG2 to be shared.`
+    );
+}
+
+function runVerbLexicalRuleTests(): void {
+    const grammar = new HPSG();
+    const see = buildCompleteLexeme({
+        type: "stv-lxm",
+        base: "see",
+        thirdSingular: "sees",
+        presentParticiple: "seeing",
+        pastParticiple: "seen",
+        reln: "see",
+    }, grammar.types);
+
+    const thirdSingular = applyThirdSingularVerbLexicalRule(see, grammar.types);
+    const nonThirdSingular = applyNonThirdSingularVerbLexicalRule(see, grammar.types);
+    const pastTense = applyPastTenseVerbLexicalRule(see, grammar.types);
+    const baseForm = applyBaseFormLexicalRule(see, grammar.types);
+
+    assert(thirdSingular.getType() === "word", `third singular see: expected word.`);
+    assert(
+        thirdSingular.getIn(["SYN", "HEAD", "FORM"])?.getType() === "fin",
+        `third singular see: expected FORM fin.`
+    );
+    assert(
+        thirdSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "3sing",
+        `third singular see: expected AGR 3sing.`
+    );
+    assert(
+        thirdSingular.getIn(["ARG-ST", "FIRST", "SYN", "HEAD", "CASE"])?.getType() === "nom",
+        `third singular see: expected subject CASE nom.`
+    );
+    assert(
+        nonThirdSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "non-3sing",
+        `non third singular see: expected AGR non-3sing.`
+    );
+    assert(
+        pastTense.getIn(["SYN", "HEAD", "FORM"])?.getType() === "fin",
+        `past tense see: expected FORM fin.`
+    );
+    assert(
+        pastTense.getIn(["SYN", "HEAD", "AGR"])?.getType() === "agr-cat",
+        `past tense see: expected AGR to remain general agr-cat.`
+    );
+    assert(
+        baseForm.getIn(["SYN", "HEAD", "FORM"])?.getType() === "base",
+        `base form see: expected FORM base.`
+    );
+    assert(
+        baseForm.getIn(["ARG-ST", "FIRST", "SYN", "HEAD", "CASE"]) === undefined,
+        `base form see: expected subject CASE to be unspecified.`
+    );
+    assert(
+        sameFeatureStructure(
+            thirdSingular.getIn(["ARG-ST", "FIRST"]),
+            thirdSingular.getIn(["SYN", "VAL", "SPR", "FIRST"])
+        ),
+        `third singular see: expected ARG-ST first element and SPR first element to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            thirdSingular.getIn(["ARG-ST", "REST", "FIRST"]),
+            thirdSingular.getIn(["SYN", "VAL", "COMPS", "FIRST"])
+        ),
+        `third singular see: expected ARG-ST second element and COMPS first element to be shared.`
+    );
+    assert(
+        thirdSingular.getIn(["SYN", "VAL", "COMPS", "REST"])?.getType() === "exp-list-empty",
+        `third singular see: expected COMPS to contain one element.`
     );
 }
