@@ -55,9 +55,17 @@ export const typeDefinition = {
     "val-cat": { parent: "top", features: { "SPR": "exp-list", "COMPS": "exp-list", "MOD": "exp-list" } },
     "sem-cat": { parent: "top", features: { "MODE": "mode", "INDEX": "index", "RESTR": "pred-list" } },
 
-    "expression": { parent: "top", features: { "SYN": "syn-cat", "SEM": "sem-cat", "ARG-ST": "exp-list" } },
+    "synsem": { parent: "top", features: { "SYN": "syn-cat", "SEM": "sem-cat", "ARG-ST": "exp-list" } },
+
+    "expression": { parent: "synsem" },
     "word": { parent: "expression" },
     "phrase": { parent: "expression" },
+
+    "lexeme": { parent: "synsem" },
+    "infl-lxm": { parent: "lexeme" },
+    "cn-lxm": { parent: "infl-lxm" },
+    "cntn-lxm": { parent: "cn-lxm" },
+    "massn-lxm": { parent: "cn-lxm" },
 
     "predication": { parent: "top", features: { "RELN": "reln", "ARG1": "index", "ARG2": "index", "ARG3": "index", } },
 
