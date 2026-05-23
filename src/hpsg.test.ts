@@ -61,6 +61,7 @@ function runHpsgParseTests(): void {
 
 runHpsgParseTests();
 runLexemeGeneratorTests();
+runVerbLexemeConstraintTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -131,4 +132,92 @@ function runLexemeGeneratorTests(): void {
         rejectedMassPlural = true;
     }
     assert(rejectedMassPlural, `water: expected Plural Noun Lexical Rule to reject massn-lxm.`);
+}
+
+function runVerbLexemeConstraintTests(): void {
+    const grammar = new HPSG();
+    const see = buildCompleteLexeme({
+        type: "stv-lxm",
+        base: "see",
+        thirdSingular: "sees",
+        presentParticiple: "seeing",
+        pastParticiple: "seen",
+        reln: "see",
+    }, grammar.types);
+    const sendDitransitive = buildCompleteLexeme({
+        type: "dtv-lxm",
+        base: "send",
+        thirdSingular: "sends",
+        presentParticiple: "sending",
+        pastParticiple: "sent",
+        reln: "send",
+    }, grammar.types);
+    const sendPrepositional = buildCompleteLexeme({
+        type: "ptv-lxm",
+        base: "send",
+        thirdSingular: "sends",
+        presentParticiple: "sending",
+        pastParticiple: "sent",
+        reln: "send",
+    }, grammar.types);
+
+    assert(see.getType() === "stv-lxm", `see: expected stv-lxm, got ${see.getType()}.`);
+    assert(
+        see.getIn(["SYN", "HEAD"])?.getType() === "verb",
+        `see: expected SYN.HEAD to be verb.`
+    );
+    assert(
+        see.getIn(["SYN", "HEAD", "AUX"])?.getType() === "-",
+        `see: expected SYN.HEAD.AUX to be -.`
+    );
+    assert(
+        sameFeatureStructure(
+            see.getIn(["SEM", "INDEX"]),
+            see.getIn(["SEM", "RESTR", "FIRST", "SIT"])
+        ),
+        `see: expected SEM.INDEX and RESTR.FIRST.SIT to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            see.getIn(["ARG-ST", "FIRST", "SEM", "INDEX"]),
+            see.getIn(["SEM", "RESTR", "FIRST", "ARG1"])
+        ),
+        `see: expected subject INDEX and ARG1 to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            see.getIn(["ARG-ST", "REST", "FIRST", "SEM", "INDEX"]),
+            see.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
+        ),
+        `see: expected object INDEX and ARG2 to be shared.`
+    );
+
+    assert(
+        sameFeatureStructure(
+            sendDitransitive.getIn(["ARG-ST", "REST", "FIRST", "SEM", "INDEX"]),
+            sendDitransitive.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
+        ),
+        `dtv send: expected second ARG-ST element and ARG2 to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            sendDitransitive.getIn(["ARG-ST", "REST", "REST", "FIRST", "SEM", "INDEX"]),
+            sendDitransitive.getIn(["SEM", "RESTR", "FIRST", "ARG3"])
+        ),
+        `dtv send: expected third ARG-ST element and ARG3 to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            sendPrepositional.getIn(["ARG-ST", "REST", "FIRST", "SEM", "INDEX"]),
+            sendPrepositional.getIn(["SEM", "RESTR", "FIRST", "ARG3"])
+        ),
+        `ptv send: expected second ARG-ST element and ARG3 to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            sendPrepositional.getIn(["ARG-ST", "REST", "REST", "FIRST", "SEM", "INDEX"]),
+            sendPrepositional.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
+        ),
+        `ptv send: expected third ARG-ST element and ARG2 to be shared.`
+    );
 }

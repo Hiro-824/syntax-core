@@ -11,6 +11,39 @@ export type MassNounLexemeInput = {
     reln: string;
 };
 
+type VerbLexemeInputBase = {
+    base: string;
+    thirdSingular: string;
+    presentParticiple: string;
+    pastParticiple: string;
+    reln: string;
+};
+
+export type SimpleIntransitiveVerbLexemeInput = VerbLexemeInputBase & {
+    type: "siv-lxm";
+};
+
+export type PrepositionalIntransitiveVerbLexemeInput = VerbLexemeInputBase & {
+    type: "piv-lxm";
+};
+
+export type SimpleTransitiveVerbLexemeInput = VerbLexemeInputBase & {
+    type: "stv-lxm";
+};
+
+export type DitransitiveVerbLexemeInput = VerbLexemeInputBase & {
+    type: "dtv-lxm";
+};
+
+export type PrepositionalTransitiveVerbLexemeInput = VerbLexemeInputBase & {
+    type: "ptv-lxm";
+};
+
 export type LexemeInput =
     | CountNounLexemeInput
-    | MassNounLexemeInput;
+    | MassNounLexemeInput
+    | SimpleIntransitiveVerbLexemeInput
+    | PrepositionalIntransitiveVerbLexemeInput
+    | SimpleTransitiveVerbLexemeInput
+    | DitransitiveVerbLexemeInput
+    | PrepositionalTransitiveVerbLexemeInput;

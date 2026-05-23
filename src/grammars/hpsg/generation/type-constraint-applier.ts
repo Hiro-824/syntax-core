@@ -17,6 +17,29 @@ function ensureRelnSubtype(relnName: string, types: TypeSystem): void {
 }
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
+    if (
+        input.type === "siv-lxm" ||
+        input.type === "piv-lxm" ||
+        input.type === "stv-lxm" ||
+        input.type === "dtv-lxm" ||
+        input.type === "ptv-lxm"
+    ) {
+        return {
+            "type": input.type,
+            "SEM": {
+                "type": "sem-cat",
+                "RESTR": {
+                    "type": "pred-list-cons",
+                    "FIRST": {
+                        "type": "predication",
+                        "RELN": input.reln,
+                    },
+                    "REST": "pred-list-empty",
+                },
+            },
+        };
+    }
+
     return {
         "type": input.type,
         "SEM": {
