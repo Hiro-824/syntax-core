@@ -79,6 +79,7 @@ export type ArgumentMarkingPrepositionLexemeInput = ConstantLexemeInputBase & {
 export type PredicativePrepositionLexemeInput = ConstantLexemeInputBase & {
     type: "predp-lxm";
     reln: string;
+    mod: "nom" | "verb";
 };
 
 export type ParticleLexemeInput = ConstantLexemeInputBase & {

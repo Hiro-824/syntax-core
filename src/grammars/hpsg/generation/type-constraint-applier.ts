@@ -64,6 +64,42 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
         };
     }
 
+    if (input.type === "predp-lxm") {
+        const val: FeatureStructureInput = {
+            "type": "val-cat",
+            "MOD": {
+                "type": "exp-list-cons",
+                "FIRST": {
+                    "type": "expression",
+                    "SYN": {
+                        "type": "syn-cat",
+                        "HEAD": input.mod === "nom" ? "noun" : "verb",
+                    },
+                },
+                "REST": "exp-list-empty",
+            },
+        };
+
+        return {
+            "type": input.type,
+            "SYN": {
+                "type": "syn-cat",
+                "VAL": val,
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "RESTR": {
+                    "type": "pred-list-cons",
+                    "FIRST": {
+                        "type": "predication",
+                        "RELN": input.reln,
+                    },
+                    "REST": "pred-list-empty",
+                },
+            },
+        };
+    }
+
     if (!input.reln) {
         return {
             "type": input.type,
@@ -82,7 +118,6 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
         input.type === "stv-lxm" ||
         input.type === "dtv-lxm" ||
         input.type === "ptv-lxm" ||
-        input.type === "predp-lxm" ||
         input.type === "adj-lxm"
     ) {
         return {

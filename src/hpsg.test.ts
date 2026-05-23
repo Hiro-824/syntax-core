@@ -239,7 +239,7 @@ function runVerbLexemeConstraintTests(): void {
 
 function runConstantLexemeLexicalRuleTests(): void {
     const grammar = new HPSG();
-    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in" }, grammar.types);
+    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in", mod: "nom" }, grammar.types);
     const inWord = applyConstantLexemeLexicalRule(inPrep, grammar.types);
 
     assert(inWord.getType() === "word", `in word: expected word.`);
@@ -278,7 +278,7 @@ function runConstantLexemeConstraintTests(): void {
     const quickly = buildCompleteLexeme({ type: "adv-lxm", form: "quickly" }, grammar.types);
     const the = buildCompleteLexeme({ type: "det-lxm", form: "the" }, grammar.types);
     const of = buildCompleteLexeme({ type: "argmkp-lxm", form: "of" }, grammar.types);
-    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in" }, grammar.types);
+    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in", mod: "nom" }, grammar.types);
 
     assert(kim.getIn(["SYN", "HEAD"])?.getType() === "noun", `kim: expected HEAD noun.`);
     assert(kim.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "3rd", `kim: expected PER 3rd.`);
