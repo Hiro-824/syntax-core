@@ -1,6 +1,4 @@
-import { FeatureStructureInput } from "../../features/features.js";
-
-export type LexiconDefinition = Record<string, FeatureStructureInput[]>;
+import type { LexiconDefinition } from "../../grammars/hpsg/hpsg.js";
 
 export const lexiconData: LexiconDefinition = {
     "girl": [

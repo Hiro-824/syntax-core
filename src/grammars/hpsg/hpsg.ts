@@ -1,10 +1,11 @@
 import { Grammar, Lexicon } from "../../core/parser.js";
 import { FeatureStructure, FeatureStructureInput } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
-import { lexiconData, LexiconDefinition } from "./lexicon.js";
 import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData } from "./rules.js";
 import { typeDefinition } from "./types.js";
+
+export type LexiconDefinition = Record<string, FeatureStructureInput[]>;
 
 export class HPSGLexicalEntryCompiler {
     constructor(private types: TypeSystem) {}
@@ -68,7 +69,7 @@ export class HPSGLexicon implements Lexicon<FeatureStructure> {
     private _lexicon: Map<string, FeatureStructure[]> = new Map();
     private compiler: HPSGLexicalEntryCompiler;
 
-    constructor(private types: TypeSystem, definition: LexiconDefinition = lexiconData) {
+    constructor(private types: TypeSystem, definition: LexiconDefinition) {
         this.compiler = new HPSGLexicalEntryCompiler(types);
         this.loadLexicon(definition);
     }

@@ -11,7 +11,8 @@ import {
     applyConstantLexemeLexicalRule,
     buildCompleteLexeme,
 } from "./grammars/hpsg/lexical-entry-generator.js";
-import { lexemeData } from "./grammars/hpsg/lexemes/data.js";
+import { lexemeData } from "./examples/hpsg/lexeme-data.js";
+import { lexiconData } from "./examples/hpsg/lexicon-data.js";
 import { FeatureStructure } from "./features/features.js";
 
 type ParseExpectation = {
@@ -35,7 +36,7 @@ function sameFeatureStructure(
 
 function runHpsgParseTests(): void {
     const grammar = new HPSG();
-    const lexicon = new HPSGLexicon(grammar.types);
+    const lexicon = new HPSGLexicon(grammar.types, lexiconData);
 
     const cases: ParseExpectation[] = [
         { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
