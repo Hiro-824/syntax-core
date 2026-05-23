@@ -57,10 +57,10 @@ export type PronounLexemeInput = ConstantLexemeInputBase & {
     gend?: "fem" | "masc" | "neut";
     mode?: "ref" | "ana";
     index?: string;
-    restr?: PronounRestrInput[];
+    restr?: PredicationInput[];
 };
 
-export type PronounRestrInput = {
+export type PredicationInput = {
     reln: string;
     arg1?: string;
     arg2?: string;

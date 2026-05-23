@@ -11,4 +11,4 @@ export type {
     VerbLexemeInput,
     VerbWords,
 } from "./grammars/hpsg/hpsg.js";
-export type { LexemeInput } from "./grammars/hpsg/lexemes/types.js";
+export type { LexemeInput, PredicationInput } from "./grammars/hpsg/lexemes/types.js";
