@@ -4,7 +4,7 @@ import {
     applySingularNounLexicalRule,
     buildCompleteLexeme,
 } from "./grammars/hpsg/lexical-entry-generator.js";
-import { lexemeData } from "./grammars/hpsg/lexeme.js";
+import { lexemeData } from "./grammars/hpsg/lexemes/data.js";
 
 type ParseExpectation = {
     sentence: string;
