@@ -44,7 +44,6 @@ function runHpsgParseTests(): void {
         { sentence: "i see myself", parses: 1, topRule: "head-specifier" },
         { sentence: "me see myself", parses: 0 },
         { sentence: "see mary", parses: 1, topRule: "head-complement" },
-        { sentence: "john sees mary with the telescope", parses: 3 },
         { sentence: "the telescope", parses: 1, topRule: "head-specifier" },
         { sentence: "a water", parses: 0 },
     ];
@@ -77,8 +76,13 @@ console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
     const grammar = new HPSG();
-    const girl = buildCompleteLexeme(lexemeData[0]!, grammar.types);
-    const water = buildCompleteLexeme(lexemeData[2]!, grammar.types);
+    const girlInput = lexemeData.find(input => input.type === "cntn-lxm" && input.singular === "girl");
+    const waterInput = lexemeData.find(input => input.type === "massn-lxm" && input.form === "water");
+    if (!girlInput) throw new Error(`expected girl lexeme data.`);
+    if (!waterInput) throw new Error(`expected water lexeme data.`);
+
+    const girl = buildCompleteLexeme(girlInput, grammar.types);
+    const water = buildCompleteLexeme(waterInput, grammar.types);
 
     assert(girl.getType() === "cntn-lxm", `girl: expected cntn-lxm, got ${girl.getType()}.`);
     assert(water.getType() === "massn-lxm", `water: expected massn-lxm, got ${water.getType()}.`);

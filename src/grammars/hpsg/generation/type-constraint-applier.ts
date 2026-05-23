@@ -17,6 +17,53 @@ function ensureRelnSubtype(relnName: string, types: TypeSystem): void {
 }
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
+    if (input.type === "pron-lxm") {
+        const head: FeatureStructureInput = {
+            "type": "noun",
+        };
+        if (input.case) {
+            head["CASE"] = input.case;
+        }
+        if (input.agr || input.per || input.num || input.gend) {
+            const agr: FeatureStructureInput = {
+                "type": input.agr ?? "agr-cat",
+            };
+            if (input.per) agr["PER"] = input.per;
+            if (input.num) agr["NUM"] = input.num;
+            if (input.gend) agr["GEND"] = input.gend;
+            head["AGR"] = agr;
+        }
+
+        return {
+            "type": input.type,
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": head,
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": input.mode ?? "ref",
+            },
+        };
+    }
+
+    if (input.type === "det-lxm") {
+        const head: FeatureStructureInput = {
+            "type": "det",
+        };
+        if (input.count) {
+            head["COUNT"] = input.count;
+        }
+
+        return {
+            "type": input.type,
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": head,
+            },
+        };
+    }
+
     if (!input.reln) {
         return {
             "type": input.type,

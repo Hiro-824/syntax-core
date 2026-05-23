@@ -2,6 +2,70 @@ import { LexemeInput } from "../../grammars/hpsg/lexemes/types.js";
 
 export const lexemeData: LexemeInput[] = [
     {
+        type: "pn-lxm",
+        form: "john",
+        reln: "named John",
+    },
+    {
+        type: "pn-lxm",
+        form: "mary",
+        reln: "named Mary",
+    },
+    {
+        type: "pron-lxm",
+        form: "i",
+        case: "nom",
+        agr: "1sing",
+        per: "1st",
+        num: "sg",
+    },
+    {
+        type: "pron-lxm",
+        form: "me",
+        case: "acc",
+        agr: "1sing",
+        per: "1st",
+        num: "sg",
+    },
+    {
+        type: "pron-lxm",
+        form: "you",
+        case: "nom",
+        agr: "agr-cat",
+        per: "2nd",
+    },
+    {
+        type: "pron-lxm",
+        form: "you",
+        case: "acc",
+        agr: "agr-cat",
+        per: "2nd",
+    },
+    {
+        type: "pron-lxm",
+        form: "myself",
+        agr: "1sing",
+        per: "1st",
+        num: "sg",
+        mode: "ana",
+    },
+    {
+        type: "pron-lxm",
+        form: "yourself",
+        agr: "agr-cat",
+        per: "2nd",
+        mode: "ana",
+    },
+    {
+        type: "det-lxm",
+        form: "a",
+        count: "+",
+    },
+    {
+        type: "det-lxm",
+        form: "the",
+    },
+    {
         type: "cntn-lxm",
         singular: "girl",
         plural: "girls",
