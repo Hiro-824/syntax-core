@@ -1,5 +1,5 @@
-import { FeatureStructure } from "../../../features/features.js";
-import { TypeSystem } from "../../../features/types.js";
+import { FeatureStructure } from "../../../../features/features.js";
+import { TypeSystem } from "../../../../features/types.js";
 
 function getRestr(expr: FeatureStructure): FeatureStructure {
     const restr = expr.getIn(["SEM", "RESTR"]);

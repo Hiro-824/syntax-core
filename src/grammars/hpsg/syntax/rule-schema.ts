@@ -1,4 +1,4 @@
-import { FeatureStructureInput } from "../../features/features.js";
+import { FeatureStructureInput } from "../../../features/features.js";
 
 export type RuleDefinition = Record<string, FeatureStructureInput>;
 

@@ -2,10 +2,15 @@
     "name": "syntax-core",
     "version": "0.1.0",
     "description": "Core TypeScript library for parsing and grammar-related logic.",
-    "private": true,
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
     "files": [
         "dist"
     ],
@@ -14,7 +19,8 @@
         "build": "tsc",
         "check": "tsc --noEmit",
         "test": "npm run build && node dist/hpsg.test.js",
-        "clean": "rimraf dist"
+        "clean": "rimraf dist",
+        "prepare": "npm run build"
     },
     "devDependencies": {
         "rimraf": "^6.0.1",

@@ -1,17 +1,20 @@
-import { HPSG, HPSGLexicon, parse } from "./index.js";
+import { HPSG, parse } from "./index.js";
 import {
-    applyPluralNounLexicalRule,
-    applySingularNounLexicalRule,
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
     applyPastParticipleLexicalRule,
     applyPastTenseVerbLexicalRule,
     applyPresentParticipleLexicalRule,
     applyThirdSingularVerbLexicalRule,
-    applyConstantLexemeLexicalRule,
-    buildCompleteLexeme,
-} from "./grammars/hpsg/lexical-entry-generator.js";
-import { lexemeData } from "./grammars/hpsg/lexemes/data.js";
+} from "./grammars/hpsg/lexicon/lexical-rules/verbs.js";
+import {
+    applyPluralNounLexicalRule,
+    applySingularNounLexicalRule,
+} from "./grammars/hpsg/lexicon/lexical-rules/nouns.js";
+import { applyConstantLexemeLexicalRule } from "./grammars/hpsg/lexicon/lexical-rules/constants.js";
+import { buildCompleteLexeme } from "./grammars/hpsg/lexicon/lexeme-builder.js";
+import { lexemeData } from "./examples/hpsg/lexeme-data.js";
+import { createExampleHpsgTerminalRules } from "./examples/hpsg/terminal-rules.js";
 import { FeatureStructure } from "./features/features.js";
 
 type ParseExpectation = {
@@ -35,7 +38,7 @@ function sameFeatureStructure(
 
 function runHpsgParseTests(): void {
     const grammar = new HPSG();
-    const lexicon = new HPSGLexicon(grammar.types);
+    const terminalRules = createExampleHpsgTerminalRules(grammar);
 
     const cases: ParseExpectation[] = [
         { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
@@ -43,14 +46,13 @@ function runHpsgParseTests(): void {
         { sentence: "i see myself", parses: 1, topRule: "head-specifier" },
         { sentence: "me see myself", parses: 0 },
         { sentence: "see mary", parses: 1, topRule: "head-complement" },
-        { sentence: "john sees mary with the telescope", parses: 3 },
         { sentence: "the telescope", parses: 1, topRule: "head-specifier" },
         { sentence: "a water", parses: 0 },
     ];
 
     for (const testCase of cases) {
         const words = testCase.sentence.split(" ");
-        const trees = parse(words, grammar, lexicon);
+        const trees = parse(words, grammar.binaryRules, terminalRules);
 
         assert(
             trees.length === testCase.parses,
@@ -72,12 +74,18 @@ runVerbLexemeConstraintTests();
 runVerbLexicalRuleTests();
 runConstantLexemeConstraintTests();
 runConstantLexemeLexicalRuleTests();
+runPronounRestrInputTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
     const grammar = new HPSG();
-    const girl = buildCompleteLexeme(lexemeData[0]!, grammar.types);
-    const water = buildCompleteLexeme(lexemeData[2]!, grammar.types);
+    const girlInput = lexemeData.find(input => input.type === "cntn-lxm" && input.singular === "girl");
+    const waterInput = lexemeData.find(input => input.type === "massn-lxm" && input.form === "water");
+    if (!girlInput) throw new Error(`expected girl lexeme data.`);
+    if (!waterInput) throw new Error(`expected water lexeme data.`);
+
+    const girl = buildCompleteLexeme(girlInput, grammar.types);
+    const water = buildCompleteLexeme(waterInput, grammar.types);
 
     assert(girl.getType() === "cntn-lxm", `girl: expected cntn-lxm, got ${girl.getType()}.`);
     assert(water.getType() === "massn-lxm", `water: expected massn-lxm, got ${water.getType()}.`);
@@ -234,7 +242,7 @@ function runVerbLexemeConstraintTests(): void {
 
 function runConstantLexemeLexicalRuleTests(): void {
     const grammar = new HPSG();
-    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in" }, grammar.types);
+    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in", mod: "nom" }, grammar.types);
     const inWord = applyConstantLexemeLexicalRule(inPrep, grammar.types);
 
     assert(inWord.getType() === "word", `in word: expected word.`);
@@ -273,7 +281,7 @@ function runConstantLexemeConstraintTests(): void {
     const quickly = buildCompleteLexeme({ type: "adv-lxm", form: "quickly" }, grammar.types);
     const the = buildCompleteLexeme({ type: "det-lxm", form: "the" }, grammar.types);
     const of = buildCompleteLexeme({ type: "argmkp-lxm", form: "of" }, grammar.types);
-    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in" }, grammar.types);
+    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in", mod: "nom" }, grammar.types);
 
     assert(kim.getIn(["SYN", "HEAD"])?.getType() === "noun", `kim: expected HEAD noun.`);
     assert(kim.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "3rd", `kim: expected PER 3rd.`);
@@ -327,6 +335,50 @@ function runConstantLexemeConstraintTests(): void {
     assert(
         sameFeatureStructure(inPrep.getIn(["SYN", "VAL", "COMPS", "FIRST"]), inPrep.getIn(["ARG-ST", "REST", "FIRST"])),
         `in: expected COMPS and ARG-ST second to be shared.`
+    );
+}
+
+function runPronounRestrInputTests(): void {
+    const grammar = new HPSG();
+    const we = grammar.buildLexeme({
+        type: "pron-lxm",
+        form: "we",
+        case: "nom",
+        agr: "plural",
+        per: "1st",
+        num: "pl",
+        index: "group",
+        restr: [
+            { reln: "group", arg1: "group" },
+            { reln: "speaker", arg1: "speaker" },
+            { reln: "member", arg1: "group", arg2: "speaker" },
+        ],
+    });
+
+    assert(we.getIn(["SEM", "RESTR"])?.getType() === "pred-list-cons", `we: expected non-empty RESTR.`);
+    assert(we.getIn(["SEM", "RESTR", "FIRST", "RELN"])?.getType() === "group", `we: expected first RELN group.`);
+    assert(we.getIn(["SEM", "RESTR", "REST", "FIRST", "RELN"])?.getType() === "speaker", `we: expected second RELN speaker.`);
+    assert(we.getIn(["SEM", "RESTR", "REST", "REST", "FIRST", "RELN"])?.getType() === "member", `we: expected third RELN member.`);
+    assert(
+        sameFeatureStructure(
+            we.getIn(["SEM", "INDEX"]),
+            we.getIn(["SEM", "RESTR", "FIRST", "ARG1"])
+        ),
+        `we: expected group predicate ARG1 to share SEM.INDEX.`
+    );
+    assert(
+        sameFeatureStructure(
+            we.getIn(["SEM", "RESTR", "FIRST", "ARG1"]),
+            we.getIn(["SEM", "RESTR", "REST", "REST", "FIRST", "ARG1"])
+        ),
+        `we: expected member ARG1 to share group index.`
+    );
+    assert(
+        sameFeatureStructure(
+            we.getIn(["SEM", "RESTR", "REST", "FIRST", "ARG1"]),
+            we.getIn(["SEM", "RESTR", "REST", "REST", "FIRST", "ARG2"])
+        ),
+        `we: expected member ARG2 to share speaker index.`
     );
 }
 

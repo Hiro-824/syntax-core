@@ -1,8 +1,10 @@
-import { FeatureStructureInput } from "../../features/features.js";
+import type { FeatureStructureInput } from "../../features/features.js";
 
-export type LexiconDefinition = Record<string, FeatureStructureInput[]>;
+// Legacy hand-written lexical entries kept as reference material.
+// Runtime examples and tests should prefer lexeme-data.ts plus generated lexical rules.
+export type LegacyLexiconDefinition = Record<string, FeatureStructureInput[]>;
 
-export const lexiconData: LexiconDefinition = {
+export const lexiconData: LegacyLexiconDefinition = {
     "girl": [
         {
             "type": "word",

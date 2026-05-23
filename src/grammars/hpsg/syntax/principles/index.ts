@@ -1,5 +1,5 @@
-import { FeatureStructure } from "../../../features/features.js";
-import { TypeSystem } from "../../../features/types.js";
+import { FeatureStructure } from "../../../../features/features.js";
+import { TypeSystem } from "../../../../features/types.js";
 import { enforceBindingTheory } from "./binding.js";
 import { setMotherRestrAsSum } from "./semantics.js";
 

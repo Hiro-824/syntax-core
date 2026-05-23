@@ -50,6 +50,21 @@ export type ProperNounLexemeInput = ConstantLexemeInputBase & {
 
 export type PronounLexemeInput = ConstantLexemeInputBase & {
     type: "pron-lxm";
+    case?: "nom" | "acc";
+    agr?: "1sing" | "3sing" | "plural" | "agr-cat";
+    per?: "1st" | "2nd" | "3rd";
+    num?: "sg" | "pl";
+    gend?: "fem" | "masc" | "neut";
+    mode?: "ref" | "ana";
+    index?: string;
+    restr?: PredicationInput[];
+};
+
+export type PredicationInput = {
+    reln: string;
+    arg1?: string;
+    arg2?: string;
+    arg3?: string;
 };
 
 export type AdjectiveLexemeInput = ConstantLexemeInputBase & {
@@ -63,6 +78,7 @@ export type AdverbLexemeInput = ConstantLexemeInputBase & {
 
 export type DeterminerLexemeInput = ConstantLexemeInputBase & {
     type: "det-lxm";
+    count?: "+" | "-";
 };
 
 export type ArgumentMarkingPrepositionLexemeInput = ConstantLexemeInputBase & {
@@ -72,6 +88,7 @@ export type ArgumentMarkingPrepositionLexemeInput = ConstantLexemeInputBase & {
 export type PredicativePrepositionLexemeInput = ConstantLexemeInputBase & {
     type: "predp-lxm";
     reln: string;
+    mod: "nom" | "verb";
 };
 
 export type ParticleLexemeInput = ConstantLexemeInputBase & {

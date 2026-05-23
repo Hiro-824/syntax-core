@@ -495,6 +495,19 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
         constraints: {
             "type": "const-lxm",
         },
+        defaults: {
+            "type": "const-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "VAL": {
+                    "type": "val-cat",
+                    "SPR": "exp-list-empty",
+                    "COMPS": "exp-list-empty",
+                    "MOD": "exp-list-empty",
+                },
+            },
+            "ARG-ST": "exp-list-empty",
+        },
     },
     "pn-lxm": {
         parent: "const-lxm",
@@ -505,7 +518,7 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "HEAD": {
                     "type": "noun",
                     "AGR": {
-                        "type": "agr-cat",
+                        "type": "3sing",
                         "PER": "3rd",
                     },
                 },
@@ -519,7 +532,7 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "HEAD": {
                     "type": "noun",
                     "AGR": {
-                        "type": "agr-cat",
+                        "type": "3sing",
                         "NUM": "sg",
                     },
                 },

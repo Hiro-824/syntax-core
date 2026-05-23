@@ -1,6 +1,6 @@
-import { Grammar, Lexicon } from "../../core/parser.js";
+import { BinaryRules, TerminalRules } from "../../core/parser.js";
 
-export class CFG implements Grammar<string> {
+export class CFG implements BinaryRules<string> {
 
     combine(left: string, right: string): { category: string; rule: string }[] {
         if (left === "NP" && right === "VP") return [{ category: "S", rule: "S → NP VP" }];
@@ -13,26 +13,19 @@ export class CFG implements Grammar<string> {
     }
 }
 
-export class CFGLexicon implements Lexicon<string> {
+const cfgCategories: Map<string, string> = new Map([
+    ["john", "NP"],
+    ["mary", "NP"],
+    ["sees", "V"],
+    ["girl", "N"],
+    ["telescope", "N"],
+    ["a", "Det"],
+    ["with", "P"],
+]);
 
-    lexicon: Map<string, string> = new Map();
-
-    constructor() {
-        this.lexicon.set("john", "NP");
-        this.lexicon.set("mary", "NP");
-        this.lexicon.set("sees", "V");
-        this.lexicon.set("girl", "N");
-        this.lexicon.set("telescope", "N");
-        this.lexicon.set("a", "Det");
-        this.lexicon.set("with", "P");
-    }
-
-    getAvailableWords(): string[] {
-        return [...this.lexicon.keys()];
-    }
-
-    getTerminalCategories(word: string): string[] {
-        const category = this.lexicon.get(word);
+export function createCFGTerminalRules(): TerminalRules<string> {
+    return word => {
+        const category = cfgCategories.get(word);
         return category ? [category] : [];
-    }
+    };
 }
