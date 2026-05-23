@@ -1,4 +1,6 @@
 import { HPSG, HPSGLexicon, parse } from "./index.js";
+import { buildCompleteLexeme } from "./grammars/hpsg/lexical-entry-generator.js";
+import { lexemeData } from "./grammars/hpsg/lexeme.js";
 
 type ParseExpectation = {
     sentence: string;
@@ -46,4 +48,39 @@ function runHpsgParseTests(): void {
 }
 
 runHpsgParseTests();
+runLexemeGeneratorTests();
 console.log("HPSG tests passed.");
+
+function runLexemeGeneratorTests(): void {
+    const grammar = new HPSG();
+    const girl = buildCompleteLexeme(lexemeData[0]!, grammar.types);
+    const water = buildCompleteLexeme(lexemeData[2]!, grammar.types);
+
+    assert(girl.getType() === "cntn-lxm", `girl: expected cntn-lxm, got ${girl.getType()}.`);
+    assert(water.getType() === "massn-lxm", `water: expected massn-lxm, got ${water.getType()}.`);
+
+    assert(
+        girl.getIn(["SYN", "HEAD"])?.getType() === "noun",
+        `girl: expected SYN.HEAD to be noun.`
+    );
+    assert(
+        girl.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "3rd",
+        `girl: expected SYN.HEAD.AGR.PER to be 3rd.`
+    );
+    assert(
+        girl.getIn(["SYN", "VAL", "SPR", "FIRST", "SYN", "HEAD", "COUNT"])?.getType() === "+",
+        `girl: expected SPR determiner COUNT to be +.`
+    );
+    assert(
+        water.getIn(["SYN", "VAL", "SPR", "FIRST", "SYN", "HEAD", "COUNT"])?.getType() === "-",
+        `water: expected SPR determiner COUNT to be -.`
+    );
+    assert(
+        girl.getIn(["SYN", "VAL", "MOD"])?.getType() === "exp-list-empty",
+        `girl: expected default MOD to be empty.`
+    );
+    assert(
+        girl.getIn(["SEM", "RESTR", "FIRST", "RELN"])?.getType() === "girl",
+        `girl: expected RELN to be girl.`
+    );
+}
