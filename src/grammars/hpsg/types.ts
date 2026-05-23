@@ -80,6 +80,7 @@ export const typeDefinition = {
     "adv-lxm": { parent: "const-lxm" },
     "det-lxm": { parent: "const-lxm" },
     "argmkp-lxm": { parent: "const-lxm" },
+    "predp-lxm": { parent: "const-lxm" },
     "part-lxm": { parent: "const-lxm" },
 
     "predication": { parent: "top", features: { "RELN": "reln", "SIT": "index", "ARG1": "index", "ARG2": "index", "ARG3": "index", } },
