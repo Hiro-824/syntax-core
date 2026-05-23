@@ -63,6 +63,7 @@ export const typeDefinition = {
 
     "lexeme": { parent: "synsem" },
     "infl-lxm": { parent: "lexeme" },
+    "const-lxm": { parent: "lexeme" },
     "cn-lxm": { parent: "infl-lxm" },
     "cntn-lxm": { parent: "cn-lxm" },
     "massn-lxm": { parent: "cn-lxm" },
@@ -73,6 +74,13 @@ export const typeDefinition = {
     "stv-lxm": { parent: "tv-lxm" },
     "dtv-lxm": { parent: "tv-lxm" },
     "ptv-lxm": { parent: "tv-lxm" },
+    "pn-lxm": { parent: "const-lxm" },
+    "pron-lxm": { parent: "const-lxm" },
+    "adj-lxm": { parent: "const-lxm" },
+    "adv-lxm": { parent: "const-lxm" },
+    "det-lxm": { parent: "const-lxm" },
+    "argmkp-lxm": { parent: "const-lxm" },
+    "part-lxm": { parent: "const-lxm" },
 
     "predication": { parent: "top", features: { "RELN": "reln", "SIT": "index", "ARG1": "index", "ARG2": "index", "ARG3": "index", } },
 
