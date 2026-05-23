@@ -17,12 +17,26 @@ function ensureRelnSubtype(relnName: string, types: TypeSystem): void {
 }
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
+    if (!input.reln) {
+        return {
+            "type": input.type,
+        };
+    }
+
+    if (input.type === "argmkp-lxm") {
+        return {
+            "type": input.type,
+        };
+    }
+
     if (
         input.type === "siv-lxm" ||
         input.type === "piv-lxm" ||
         input.type === "stv-lxm" ||
         input.type === "dtv-lxm" ||
-        input.type === "ptv-lxm"
+        input.type === "ptv-lxm" ||
+        input.type === "predp-lxm" ||
+        input.type === "adj-lxm"
     ) {
         return {
             "type": input.type,
@@ -102,7 +116,9 @@ function applyDefaults(target: FeatureStructure, defaults: FeatureStructure, typ
 }
 
 export function buildCompleteLexeme(input: LexemeInput, types: TypeSystem): FeatureStructure {
-    ensureRelnSubtype(input.reln, types);
+    if (input.reln) {
+        ensureRelnSubtype(input.reln, types);
+    }
 
     const chain = getLexemeConstraintChain(input.type);
     const completeLexeme = unifyAll(

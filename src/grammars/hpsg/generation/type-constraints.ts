@@ -12,7 +12,16 @@ export type LexemeType =
     | "tv-lxm"
     | "stv-lxm"
     | "dtv-lxm"
-    | "ptv-lxm";
+    | "ptv-lxm"
+    | "const-lxm"
+    | "pn-lxm"
+    | "pron-lxm"
+    | "adj-lxm"
+    | "adv-lxm"
+    | "det-lxm"
+    | "argmkp-lxm"
+    | "predp-lxm"
+    | "part-lxm";
 
 export type LexemeConstraintStage = {
     parent?: LexemeType;
@@ -479,6 +488,313 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                     "REST": "pred-list-empty",
                 },
             },
+        },
+    },
+    "const-lxm": {
+        parent: "lexeme",
+        constraints: {
+            "type": "const-lxm",
+        },
+    },
+    "pn-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "pn-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "noun",
+                    "AGR": {
+                        "type": "agr-cat",
+                        "PER": "3rd",
+                    },
+                },
+            },
+            "ARG-ST": "exp-list-empty",
+        },
+        defaults: {
+            "type": "pn-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "noun",
+                    "AGR": {
+                        "type": "agr-cat",
+                        "NUM": "sg",
+                    },
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "ref",
+            },
+        },
+    },
+    "pron-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "pron-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "noun",
+                },
+            },
+            "ARG-ST": "exp-list-empty",
+        },
+        defaults: {
+            "type": "pron-lxm",
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "ref",
+            },
+        },
+    },
+    "adj-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "adj-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": "adj",
+                "VAL": {
+                    "type": "val-cat",
+                    "SPR": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "_id": "arg1",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "noun",
+                                "VAL": {
+                                    "type": "val-cat",
+                                    "SPR": "exp-list-empty",
+                                },
+                            },
+                            "SEM": {
+                                "type": "sem-cat",
+                                "INDEX": {
+                                    "type": "index",
+                                    "_id": "i",
+                                },
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                    "MOD": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "noun",
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "prop",
+                "RESTR": {
+                    "type": "pred-list-cons",
+                    "FIRST": {
+                        "type": "predication",
+                        "ARG1": "#i",
+                    },
+                    "REST": "pred-list-empty",
+                },
+            },
+            "ARG-ST": {
+                "type": "exp-list-cons",
+                "FIRST": "#arg1",
+                "REST": "exp-list-empty",
+            },
+        },
+    },
+    "adv-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "adv-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": "adv",
+                "VAL": {
+                    "type": "val-cat",
+                    "MOD": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "verb",
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "none",
+            },
+        },
+    },
+    "det-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "det-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": "det",
+                "VAL": {
+                    "type": "val-cat",
+                    "COMPS": "exp-list-empty",
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "none",
+            },
+        },
+        defaults: {
+            "type": "det-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "VAL": {
+                    "type": "val-cat",
+                    "SPR": "exp-list-empty",
+                },
+            },
+        },
+    },
+    "argmkp-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "argmkp-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": "prep",
+                "VAL": {
+                    "type": "val-cat",
+                    "SPR": "exp-list-empty",
+                    "COMPS": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "_id": "arg1",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "noun",
+                            },
+                            "SEM": {
+                                "type": "sem-cat",
+                                "MODE": {
+                                    "type": "mode",
+                                    "_id": "m",
+                                },
+                                "INDEX": {
+                                    "type": "index",
+                                    "_id": "i",
+                                },
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "#m",
+                "INDEX": "#i",
+                "RESTR": "pred-list-empty",
+            },
+            "ARG-ST": {
+                "type": "exp-list-cons",
+                "FIRST": "#arg1",
+                "REST": "exp-list-empty",
+            },
+        },
+    },
+    "predp-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "predp-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": "prep",
+                "VAL": {
+                    "type": "val-cat",
+                    "SPR": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "_id": "arg1",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "noun",
+                            },
+                            "SEM": {
+                                "type": "sem-cat",
+                                "INDEX": {
+                                    "type": "index",
+                                    "_id": "i",
+                                },
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                    "COMPS": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "_id": "arg2",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "noun",
+                            },
+                            "SEM": {
+                                "type": "sem-cat",
+                                "INDEX": {
+                                    "type": "index",
+                                    "_id": "j",
+                                },
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "prop",
+                "RESTR": {
+                    "type": "pred-list-cons",
+                    "FIRST": {
+                        "type": "predication",
+                        "ARG1": "#i",
+                        "ARG2": "#j",
+                    },
+                    "REST": "pred-list-empty",
+                },
+            },
+            "ARG-ST": {
+                "type": "exp-list-cons",
+                "FIRST": "#arg1",
+                "REST": {
+                    "type": "exp-list-cons",
+                    "FIRST": "#arg2",
+                    "REST": "exp-list-empty",
+                },
+            },
+        },
+    },
+    "part-lxm": {
+        parent: "const-lxm",
+        constraints: {
+            "type": "part-lxm",
         },
     },
 };

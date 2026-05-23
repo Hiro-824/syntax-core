@@ -67,6 +67,7 @@ runHpsgParseTests();
 runLexemeGeneratorTests();
 runVerbLexemeConstraintTests();
 runVerbLexicalRuleTests();
+runConstantLexemeConstraintTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -224,6 +225,71 @@ function runVerbLexemeConstraintTests(): void {
             sendPrepositional.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
         ),
         `ptv send: expected third ARG-ST element and ARG2 to be shared.`
+    );
+}
+
+function runConstantLexemeConstraintTests(): void {
+    const grammar = new HPSG();
+    const kim = buildCompleteLexeme({ type: "pn-lxm", form: "kim", reln: "named Kim" }, grammar.types);
+    const she = buildCompleteLexeme({ type: "pron-lxm", form: "she" }, grammar.types);
+    const big = buildCompleteLexeme({ type: "adj-lxm", form: "big", reln: "big" }, grammar.types);
+    const quickly = buildCompleteLexeme({ type: "adv-lxm", form: "quickly" }, grammar.types);
+    const the = buildCompleteLexeme({ type: "det-lxm", form: "the" }, grammar.types);
+    const of = buildCompleteLexeme({ type: "argmkp-lxm", form: "of" }, grammar.types);
+    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in" }, grammar.types);
+
+    assert(kim.getIn(["SYN", "HEAD"])?.getType() === "noun", `kim: expected HEAD noun.`);
+    assert(kim.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "3rd", `kim: expected PER 3rd.`);
+    assert(kim.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "sg", `kim: expected default NUM sg.`);
+    assert(kim.getIn(["SEM", "MODE"])?.getType() === "ref", `kim: expected default MODE ref.`);
+    assert(kim.getIn(["ARG-ST"])?.getType() === "exp-list-empty", `kim: expected empty ARG-ST.`);
+
+    assert(she.getIn(["SYN", "HEAD"])?.getType() === "noun", `she: expected HEAD noun.`);
+    assert(she.getIn(["SEM", "MODE"])?.getType() === "ref", `she: expected default MODE ref.`);
+    assert(she.getIn(["ARG-ST"])?.getType() === "exp-list-empty", `she: expected empty ARG-ST.`);
+
+    assert(big.getIn(["SYN", "HEAD"])?.getType() === "adj", `big: expected HEAD adj.`);
+    assert(big.getIn(["SEM", "MODE"])?.getType() === "prop", `big: expected MODE prop.`);
+    assert(
+        sameFeatureStructure(
+            big.getIn(["ARG-ST", "FIRST"]),
+            big.getIn(["SYN", "VAL", "SPR", "FIRST"])
+        ),
+        `big: expected ARG-ST first and SPR first to be shared.`
+    );
+    assert(big.getIn(["SYN", "VAL", "MOD", "FIRST", "SYN", "HEAD"])?.getType() === "noun", `big: expected noun modifier target.`);
+
+    assert(quickly.getIn(["SYN", "HEAD"])?.getType() === "adv", `quickly: expected HEAD adv.`);
+    assert(quickly.getIn(["SYN", "VAL", "MOD", "FIRST", "SYN", "HEAD"])?.getType() === "verb", `quickly: expected verb modifier target.`);
+    assert(quickly.getIn(["SEM", "MODE"])?.getType() === "none", `quickly: expected MODE none.`);
+
+    assert(the.getIn(["SYN", "HEAD"])?.getType() === "det", `the: expected HEAD det.`);
+    assert(the.getIn(["SYN", "VAL", "SPR"])?.getType() === "exp-list-empty", `the: expected default SPR empty.`);
+    assert(the.getIn(["SYN", "VAL", "COMPS"])?.getType() === "exp-list-empty", `the: expected COMPS empty.`);
+    assert(the.getIn(["SEM", "MODE"])?.getType() === "none", `the: expected MODE none.`);
+
+    assert(of.getIn(["SYN", "HEAD"])?.getType() === "prep", `of: expected HEAD prep.`);
+    assert(of.getIn(["SYN", "VAL", "SPR"])?.getType() === "exp-list-empty", `of: expected SPR empty.`);
+    assert(of.getIn(["SEM", "RESTR"])?.getType() === "pred-list-empty", `of: expected empty RESTR.`);
+    assert(
+        sameFeatureStructure(of.getIn(["SEM", "INDEX"]), of.getIn(["ARG-ST", "FIRST", "SEM", "INDEX"])),
+        `of: expected SEM.INDEX and object INDEX to be shared.`
+    );
+    assert(
+        sameFeatureStructure(of.getIn(["SEM", "MODE"]), of.getIn(["ARG-ST", "FIRST", "SEM", "MODE"])),
+        `of: expected SEM.MODE and object MODE to be shared.`
+    );
+
+    assert(inPrep.getIn(["SYN", "HEAD"])?.getType() === "prep", `in: expected HEAD prep.`);
+    assert(inPrep.getIn(["SEM", "MODE"])?.getType() === "prop", `in: expected MODE prop.`);
+    assert(inPrep.getIn(["SEM", "RESTR", "FIRST", "RELN"])?.getType() === "in", `in: expected RELN in.`);
+    assert(
+        sameFeatureStructure(inPrep.getIn(["SYN", "VAL", "SPR", "FIRST"]), inPrep.getIn(["ARG-ST", "FIRST"])),
+        `in: expected SPR and ARG-ST first to be shared.`
+    );
+    assert(
+        sameFeatureStructure(inPrep.getIn(["SYN", "VAL", "COMPS", "FIRST"]), inPrep.getIn(["ARG-ST", "REST", "FIRST"])),
+        `in: expected COMPS and ARG-ST second to be shared.`
     );
 }
 

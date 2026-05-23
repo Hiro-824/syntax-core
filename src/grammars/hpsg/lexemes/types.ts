@@ -39,6 +39,45 @@ export type PrepositionalTransitiveVerbLexemeInput = VerbLexemeInputBase & {
     type: "ptv-lxm";
 };
 
+type ConstantLexemeInputBase = {
+    form: string;
+    reln?: string;
+};
+
+export type ProperNounLexemeInput = ConstantLexemeInputBase & {
+    type: "pn-lxm";
+};
+
+export type PronounLexemeInput = ConstantLexemeInputBase & {
+    type: "pron-lxm";
+};
+
+export type AdjectiveLexemeInput = ConstantLexemeInputBase & {
+    type: "adj-lxm";
+    reln: string;
+};
+
+export type AdverbLexemeInput = ConstantLexemeInputBase & {
+    type: "adv-lxm";
+};
+
+export type DeterminerLexemeInput = ConstantLexemeInputBase & {
+    type: "det-lxm";
+};
+
+export type ArgumentMarkingPrepositionLexemeInput = ConstantLexemeInputBase & {
+    type: "argmkp-lxm";
+};
+
+export type PredicativePrepositionLexemeInput = ConstantLexemeInputBase & {
+    type: "predp-lxm";
+    reln: string;
+};
+
+export type ParticleLexemeInput = ConstantLexemeInputBase & {
+    type: "part-lxm";
+};
+
 export type LexemeInput =
     | CountNounLexemeInput
     | MassNounLexemeInput
@@ -46,4 +85,12 @@ export type LexemeInput =
     | PrepositionalIntransitiveVerbLexemeInput
     | SimpleTransitiveVerbLexemeInput
     | DitransitiveVerbLexemeInput
-    | PrepositionalTransitiveVerbLexemeInput;
+    | PrepositionalTransitiveVerbLexemeInput
+    | ProperNounLexemeInput
+    | PronounLexemeInput
+    | AdjectiveLexemeInput
+    | AdverbLexemeInput
+    | DeterminerLexemeInput
+    | ArgumentMarkingPrepositionLexemeInput
+    | PredicativePrepositionLexemeInput
+    | ParticleLexemeInput;
