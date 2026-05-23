@@ -85,6 +85,55 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
         };
     }
 
+    if (input.type === "piv-lxm") {
+        return {
+            "type": input.type,
+            "ARG-ST": {
+                "type": "exp-list-cons",
+                "REST": {
+                    "type": "exp-list-cons",
+                    "FIRST": {
+                        "type": "expression",
+                        "SYN": {
+                            "type": "syn-cat",
+                            "HEAD": {
+                                "type": "prep",
+                                "FORM": input.prepositionForm,
+                            },
+                        },
+                    },
+                },
+            },
+            "SEM": buildRelnOnlySem(input.reln),
+        };
+    }
+
+    if (input.type === "ptv-lxm") {
+        return {
+            "type": input.type,
+            "ARG-ST": {
+                "type": "exp-list-cons",
+                "REST": {
+                    "type": "exp-list-cons",
+                    "REST": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": {
+                                    "type": "prep",
+                                    "FORM": input.prepositionForm,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            "SEM": buildRelnOnlySem(input.reln),
+        };
+    }
+
     if (input.type === "predp-lxm") {
         const val: FeatureStructureInput = {
             "type": "val-cat",
@@ -107,17 +156,7 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
                 "type": "syn-cat",
                 "VAL": val,
             },
-            "SEM": {
-                "type": "sem-cat",
-                "RESTR": {
-                    "type": "pred-list-cons",
-                    "FIRST": {
-                        "type": "predication",
-                        "RELN": input.reln,
-                    },
-                    "REST": "pred-list-empty",
-                },
-            },
+            "SEM": buildRelnOnlySem(input.reln),
         };
     }
 
@@ -135,25 +174,13 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
 
     if (
         input.type === "siv-lxm" ||
-        input.type === "piv-lxm" ||
         input.type === "stv-lxm" ||
         input.type === "dtv-lxm" ||
-        input.type === "ptv-lxm" ||
         input.type === "adj-lxm"
     ) {
         return {
             "type": input.type,
-            "SEM": {
-                "type": "sem-cat",
-                "RESTR": {
-                    "type": "pred-list-cons",
-                    "FIRST": {
-                        "type": "predication",
-                        "RELN": input.reln,
-                    },
-                    "REST": "pred-list-empty",
-                },
-            },
+            "SEM": buildRelnOnlySem(input.reln),
         };
     }
 
@@ -174,6 +201,20 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
                 },
                 "REST": "pred-list-empty",
             },
+        },
+    };
+}
+
+function buildRelnOnlySem(reln: string): FeatureStructureInput {
+    return {
+        "type": "sem-cat",
+        "RESTR": {
+            "type": "pred-list-cons",
+            "FIRST": {
+                "type": "predication",
+                "RELN": reln,
+            },
+            "REST": "pred-list-empty",
         },
     };
 }

@@ -26,6 +26,7 @@ export type SimpleIntransitiveVerbLexemeInput = VerbLexemeInputBase & {
 
 export type PrepositionalIntransitiveVerbLexemeInput = VerbLexemeInputBase & {
     type: "piv-lxm";
+    prepositionForm: string;
 };
 
 export type SimpleTransitiveVerbLexemeInput = VerbLexemeInputBase & {
@@ -38,6 +39,7 @@ export type DitransitiveVerbLexemeInput = VerbLexemeInputBase & {
 
 export type PrepositionalTransitiveVerbLexemeInput = VerbLexemeInputBase & {
     type: "ptv-lxm";
+    prepositionForm: string;
 };
 
 type ConstantLexemeInputBase = {

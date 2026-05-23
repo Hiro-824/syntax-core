@@ -180,6 +180,7 @@ function runVerbLexemeConstraintTests(): void {
         pastTense: "sent",
         pastParticiple: "sent",
         reln: "send",
+        prepositionForm: "to-form",
     }, grammar.types);
 
     assert(see.getType() === "stv-lxm", `see: expected stv-lxm, got ${see.getType()}.`);
@@ -240,6 +241,10 @@ function runVerbLexemeConstraintTests(): void {
             sendPrepositional.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
         ),
         `ptv send: expected third ARG-ST element and ARG2 to be shared.`
+    );
+    assert(
+        sendPrepositional.getIn(["ARG-ST", "REST", "REST", "FIRST", "SYN", "HEAD", "FORM"])?.getType() === "to-form",
+        `ptv send: expected preposition FORM to-form.`
     );
 }
 

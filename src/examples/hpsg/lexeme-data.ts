@@ -129,6 +129,7 @@ export const lexemeData: LexemeInput[] = [
         pastTense: "went",
         pastParticiple: "gone",
         reln: "go",
+        prepositionForm: "to-form",
     },
     {
         type: "stv-lxm",
@@ -156,5 +157,6 @@ export const lexemeData: LexemeInput[] = [
         pastTense: "sent",
         pastParticiple: "sent",
         reln: "send",
+        prepositionForm: "to-form",
     },
 ];
