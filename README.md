@@ -4,16 +4,8 @@ Core TypeScript library for parsing and grammar-related logic.
 
 ## Install from GitHub
 
-Replace `OWNER` and `REPO` with the GitHub repository location:
-
 ```sh
-npm install github:OWNER/REPO
-```
-
-For a private repository, SSH is usually easiest:
-
-```sh
-npm install git+ssh://git@github.com:OWNER/REPO.git
+npm install github:Hiro-824/syntax-core
 ```
 
 ## Usage
