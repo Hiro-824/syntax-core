@@ -1,4 +1,4 @@
-import { HPSG, parse } from "./index.js";
+import { HPSG, parseFromString } from "./index.js";
 import {
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
@@ -52,7 +52,7 @@ function runHpsgParseTests(): void {
 
     for (const testCase of cases) {
         const words = testCase.sentence.split(" ");
-        const trees = parse(words, grammar.binaryRules, terminalRules);
+        const trees = parseFromString(words, grammar.binaryRules, terminalRules);
 
         assert(
             trees.length === testCase.parses,

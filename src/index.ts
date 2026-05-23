@@ -1,4 +1,4 @@
-export { createTerminalRules, parse, parseFromTerminalNodes } from "./core/parser.js";
+export { createTerminalRules, parse, parseFromString } from "./core/parser.js";
 export type { BinaryRules, Node, TerminalEntry, TerminalRules } from "./core/parser.js";
 
 export { CFG, createCFGTerminalRules } from "./grammars/cfg/cfg.js";

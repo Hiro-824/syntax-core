@@ -1,4 +1,4 @@
-import { CFG, createCFGTerminalRules, HPSG, parse, Node } from "./index.js";
+import { CFG, createCFGTerminalRules, HPSG, parseFromString, Node } from "./index.js";
 import { createExampleHpsgTerminalRules } from "./examples/hpsg/terminal-rules.js";
 
 function formatTree<T>(
@@ -23,7 +23,7 @@ function runCFGDemo(): void {
     const sentence = ["john", "sees", "mary"];
     const grammar = new CFG();
     const terminalRules = createCFGTerminalRules();
-    const trees = parse(sentence, grammar, terminalRules);
+    const trees = parseFromString(sentence, grammar, terminalRules);
 
     console.log(`\n[CFG] ${sentence.join(" ")}`);
     console.log(`parses: ${trees.length}`);
@@ -37,7 +37,7 @@ function runHPSGDemo(): void {
     const sentence = ["you", "see", "yourself"];
     const grammar = new HPSG();
     const terminalRules = createExampleHpsgTerminalRules(grammar);
-    const trees = parse(sentence, grammar.binaryRules, terminalRules);
+    const trees = parseFromString(sentence, grammar.binaryRules, terminalRules);
 
     console.log(`\n[HPSG] ${sentence.join(" ")}`);
     console.log(`parses: ${trees.length}`);

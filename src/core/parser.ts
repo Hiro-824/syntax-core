@@ -17,7 +17,7 @@ export type Node<T> = {
     rule: string;
 }
 
-export function parse<T>(
+export function parseFromString<T>(
     words: string[],
     binaryRules: BinaryRules<T>,
     terminalRules: TerminalRules<T>
@@ -30,7 +30,7 @@ export function parse<T>(
         }))
     );
 
-    return parseFromTerminalNodes(terminals, binaryRules);
+    return parse(terminals, binaryRules);
 }
 
 export function createTerminalRules<T>(
@@ -55,7 +55,7 @@ export function createTerminalRules<T>(
     };
 }
 
-export function parseFromTerminalNodes<T>(terminals: Node<T>[][], binaryRules: BinaryRules<T>): Node<T>[] {
+export function parse<T>(terminals: Node<T>[][], binaryRules: BinaryRules<T>): Node<T>[] {
     const length = terminals.length;
     if (length === 0) return [];
 
