@@ -4,6 +4,11 @@ export interface BinaryRules<T> {
 
 export type TerminalRules<T> = (terminal: string) => T[];
 
+export type TerminalEntry<T> = {
+    terminal: string;
+    category: T;
+};
+
 export type Node<T> = {
     mother: T;
     left?: Node<T>;
@@ -26,6 +31,28 @@ export function parse<T>(
     );
 
     return parseFromTerminalNodes(terminals, binaryRules);
+}
+
+export function createTerminalRules<T>(
+    entries: TerminalEntry<T>[],
+    copyCategory?: (category: T) => T
+): TerminalRules<T> {
+    const categoriesByTerminal: Map<string, T[]> = new Map();
+
+    for (const { terminal, category } of entries) {
+        const categories = categoriesByTerminal.get(terminal);
+        if (categories) {
+            categories.push(category);
+        } else {
+            categoriesByTerminal.set(terminal, [category]);
+        }
+    }
+
+    return terminal => {
+        const categories = categoriesByTerminal.get(terminal);
+        if (!categories) return [];
+        return copyCategory ? categories.map(copyCategory) : [...categories];
+    };
 }
 
 export function parseFromTerminalNodes<T>(terminals: Node<T>[][], binaryRules: BinaryRules<T>): Node<T>[] {
