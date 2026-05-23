@@ -66,8 +66,15 @@ export const typeDefinition = {
     "cn-lxm": { parent: "infl-lxm" },
     "cntn-lxm": { parent: "cn-lxm" },
     "massn-lxm": { parent: "cn-lxm" },
+    "verb-lxm": { parent: "infl-lxm" },
+    "siv-lxm": { parent: "verb-lxm" },
+    "piv-lxm": { parent: "verb-lxm" },
+    "tv-lxm": { parent: "verb-lxm" },
+    "stv-lxm": { parent: "tv-lxm" },
+    "dtv-lxm": { parent: "tv-lxm" },
+    "ptv-lxm": { parent: "tv-lxm" },
 
-    "predication": { parent: "top", features: { "RELN": "reln", "ARG1": "index", "ARG2": "index", "ARG3": "index", } },
+    "predication": { parent: "top", features: { "RELN": "reln", "SIT": "index", "ARG1": "index", "ARG2": "index", "ARG3": "index", } },
 
     "agr-cat": { parent: "top", features: { "PER": "per", "NUM": "num" } },
     "3sing": { parent: "agr-cat", features: { "PER": "3rd", "NUM": "sg", "GEND": "gend" } },
