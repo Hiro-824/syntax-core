@@ -13,6 +13,7 @@
         "dev": "tsx src/demo.ts",
         "build": "tsc",
         "check": "tsc --noEmit",
+        "test": "npm run build && node dist/hpsg.test.js",
         "clean": "rimraf dist"
     },
     "devDependencies": {
