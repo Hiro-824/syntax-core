@@ -6,6 +6,7 @@ import {
     applyNonThirdSingularVerbLexicalRule,
     applyPastTenseVerbLexicalRule,
     applyThirdSingularVerbLexicalRule,
+    applyConstantLexemeLexicalRule,
     buildCompleteLexeme,
 } from "./grammars/hpsg/lexical-entry-generator.js";
 import { lexemeData } from "./grammars/hpsg/lexemes/data.js";
@@ -68,6 +69,7 @@ runLexemeGeneratorTests();
 runVerbLexemeConstraintTests();
 runVerbLexicalRuleTests();
 runConstantLexemeConstraintTests();
+runConstantLexemeLexicalRuleTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -226,6 +228,39 @@ function runVerbLexemeConstraintTests(): void {
         ),
         `ptv send: expected third ARG-ST element and ARG2 to be shared.`
     );
+}
+
+function runConstantLexemeLexicalRuleTests(): void {
+    const grammar = new HPSG();
+    const inPrep = buildCompleteLexeme({ type: "predp-lxm", form: "in", reln: "in" }, grammar.types);
+    const inWord = applyConstantLexemeLexicalRule(inPrep, grammar.types);
+
+    assert(inWord.getType() === "word", `in word: expected word.`);
+    assert(inWord.getIn(["SYN", "HEAD"])?.getType() === "prep", `in word: expected HEAD prep.`);
+    assert(
+        sameFeatureStructure(inWord.getIn(["SYN", "VAL", "SPR", "FIRST"]), inWord.getIn(["ARG-ST", "FIRST"])),
+        `in word: expected SPR and ARG-ST first to remain shared.`
+    );
+    assert(
+        sameFeatureStructure(inWord.getIn(["SYN", "VAL", "COMPS", "FIRST"]), inWord.getIn(["ARG-ST", "REST", "FIRST"])),
+        `in word: expected COMPS and ARG-ST second to remain shared.`
+    );
+
+    let rejectedInflLexeme = false;
+    try {
+        const see = buildCompleteLexeme({
+            type: "stv-lxm",
+            base: "see",
+            thirdSingular: "sees",
+            presentParticiple: "seeing",
+            pastParticiple: "seen",
+            reln: "see",
+        }, grammar.types);
+        applyConstantLexemeLexicalRule(see, grammar.types);
+    } catch {
+        rejectedInflLexeme = true;
+    }
+    assert(rejectedInflLexeme, `Constant Lexeme Lexical Rule should reject infl-lxm descendants.`);
 }
 
 function runConstantLexemeConstraintTests(): void {
