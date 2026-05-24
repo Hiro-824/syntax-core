@@ -4,6 +4,8 @@ import { TypeSystem } from "../../../features/types.js";
 import { applyHpsgPrinciples } from "./principles/index.js";
 import { ruleData, RuleDefinition } from "./rule-schema.js";
 
+type CombineResult = { category: FeatureStructure; rule: string };
+
 export class HPSGBinaryRules implements BinaryRules<FeatureStructure> {
 
     private _rules: Map<string, FeatureStructure> = new Map();
@@ -23,61 +25,64 @@ export class HPSGBinaryRules implements BinaryRules<FeatureStructure> {
         }
     }
 
-    combine(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
-        const results: { category: FeatureStructure; rule: string }[] = [];
+    combine(left: FeatureStructure, right: FeatureStructure): CombineResult[] {
+        const results: CombineResult[] = [];
 
-        for (const [ruleName, ruleSchema] of this._rules.entries()) {
-            const context = new Map<FeatureStructure, FeatureStructure>();
-
-            const schema = ruleSchema.deepCopy(context, this.types);
-            const leftCopy = left.deepCopy(context, this.types);
-            const rightCopy = right.deepCopy(context, this.types);
-
-            let targetHead: FeatureStructure;
-            let targetNonHead: FeatureStructure;
-            let targetMother: FeatureStructure;
-
-            let candidateHead: FeatureStructure;
-            let candidateNonHead: FeatureStructure;
-
-            try {
-                targetHead = schema.get("HEAD-DTR")!;
-                targetNonHead = schema.get("NON-HEAD-DTR")!;
-                targetMother = schema.get("MOTHER")!;
-            } catch (e) {
-                console.error(`Invalid rule schema: ${ruleName}, ${e}`);
-                continue;
-            }
-
-            if (ruleName === "head-complement") {
-                candidateHead = leftCopy;
-                candidateNonHead = rightCopy;
-            } else if (ruleName === "head-specifier") {
-                candidateHead = rightCopy;
-                candidateNonHead = leftCopy;
-            } else if (ruleName === "head-modifier") {
-                candidateHead = leftCopy;
-                candidateNonHead = rightCopy;
-            } else {
-                continue;
-            }
-
-            try {
-                FeatureStructure.unify(targetHead, candidateHead, this.types);
-                FeatureStructure.unify(targetNonHead, candidateNonHead, this.types);
-                applyHpsgPrinciples({
-                    ruleName,
-                    mother: targetMother,
-                    head: candidateHead,
-                    nonHead: candidateNonHead,
-                    types: this.types,
-                });
-                results.push({ category: targetMother, rule: ruleName });
-            } catch {
-                // Rule application failure is expected for many candidates.
-            }
-        }
+        results.push(...this.applyNamedRule("head-specifier", right, left));
+        results.push(...this.applyNamedRule("head-complement", left, right));
+        results.push(...this.applyNamedRule("head-modifier", left, right));
 
         return results;
+    }
+
+    combineHeadComplement(head: FeatureStructure, complement: FeatureStructure): CombineResult[] {
+        return this.applyNamedRule("head-complement", head, complement);
+    }
+
+    combineHeadSpecifier(head: FeatureStructure, specifier: FeatureStructure): CombineResult[] {
+        return this.applyNamedRule("head-specifier", head, specifier);
+    }
+
+    combineHeadModifier(head: FeatureStructure, modifier: FeatureStructure): CombineResult[] {
+        return this.applyNamedRule("head-modifier", head, modifier);
+    }
+
+    private applyNamedRule(
+        ruleName: "head-complement" | "head-specifier" | "head-modifier",
+        head: FeatureStructure,
+        nonHead: FeatureStructure
+    ): CombineResult[] {
+        const ruleSchema = this._rules.get(ruleName);
+        if (!ruleSchema) return [];
+
+        const context = new Map<FeatureStructure, FeatureStructure>();
+        const schema = ruleSchema.deepCopy(context, this.types);
+        const candidateHead = head.deepCopy(context, this.types);
+        const candidateNonHead = nonHead.deepCopy(context, this.types);
+
+        const targetHead = schema.get("HEAD-DTR");
+        const targetNonHead = schema.get("NON-HEAD-DTR");
+        const targetMother = schema.get("MOTHER");
+
+        if (!targetHead || !targetNonHead || !targetMother) {
+            console.error(`Invalid rule schema: ${ruleName}`);
+            return [];
+        }
+
+        try {
+            FeatureStructure.unify(targetHead, candidateHead, this.types);
+            FeatureStructure.unify(targetNonHead, candidateNonHead, this.types);
+            applyHpsgPrinciples({
+                ruleName,
+                mother: targetMother,
+                head: candidateHead,
+                nonHead: candidateNonHead,
+                types: this.types,
+            });
+            return [{ category: targetMother, rule: ruleName }];
+        } catch {
+            // Rule application failure is expected for many candidates.
+            return [];
+        }
     }
 }

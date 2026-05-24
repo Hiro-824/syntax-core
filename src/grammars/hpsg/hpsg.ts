@@ -68,6 +68,31 @@ export class HPSG {
         return buildCompleteLexeme(input, this.types);
     }
 
+    combine(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
+        return this.binaryRules.combine(left, right);
+    }
+
+    combineHeadComplement(
+        head: FeatureStructure,
+        complement: FeatureStructure
+    ): { category: FeatureStructure; rule: string }[] {
+        return this.binaryRules.combineHeadComplement(head, complement);
+    }
+
+    combineHeadSpecifier(
+        head: FeatureStructure,
+        specifier: FeatureStructure
+    ): { category: FeatureStructure; rule: string }[] {
+        return this.binaryRules.combineHeadSpecifier(head, specifier);
+    }
+
+    combineHeadModifier(
+        head: FeatureStructure,
+        modifier: FeatureStructure
+    ): { category: FeatureStructure; rule: string }[] {
+        return this.binaryRules.combineHeadModifier(head, modifier);
+    }
+
     applySingularNounRule(lexeme: FeatureStructure): FeatureStructure {
         return applySingularNounLexicalRule(lexeme, this.types);
     }

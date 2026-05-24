@@ -1,4 +1,4 @@
-import { HPSG, parseFromString } from "./index.js";
+import { FeatureStructure, HPSG, parseFromString } from "./index.js";
 import {
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
@@ -15,7 +15,6 @@ import { applyConstantLexemeLexicalRule } from "./grammars/hpsg/lexicon/lexical-
 import { buildCompleteLexeme } from "./grammars/hpsg/lexicon/lexeme-builder.js";
 import { lexemeData } from "./examples/hpsg/lexeme-data.js";
 import { createExampleHpsgTerminalRules } from "./examples/hpsg/terminal-rules.js";
-import { FeatureStructure } from "./features/features.js";
 
 type ParseExpectation = {
     sentence: string;
@@ -69,6 +68,7 @@ function runHpsgParseTests(): void {
 }
 
 runHpsgParseTests();
+runDirectHpsgCombineTests();
 runLexemeGeneratorTests();
 runVerbLexemeConstraintTests();
 runVerbLexicalRuleTests();
@@ -150,6 +150,44 @@ function runLexemeGeneratorTests(): void {
         rejectedMassPlural = true;
     }
     assert(rejectedMassPlural, `water: expected Plural Noun Lexical Rule to reject massn-lxm.`);
+}
+
+function runDirectHpsgCombineTests(): void {
+    const grammar = new HPSG();
+    const terminalRules = createExampleHpsgTerminalRules(grammar, [
+        ...lexemeData,
+        { type: "adv-lxm", form: "quickly" },
+    ]);
+
+    const john = getSingleTerminal(terminalRules, "john");
+    const mary = getSingleTerminal(terminalRules, "mary");
+    const sees = getSingleTerminal(terminalRules, "sees");
+    const quickly = getSingleTerminal(terminalRules, "quickly");
+
+    const seesMaryResults = grammar.combineHeadComplement(sees, mary);
+    assert(seesMaryResults.length === 1, `sees mary: expected one direct head-complement result.`);
+    assert(seesMaryResults[0].rule === "head-complement", `sees mary: expected head-complement.`);
+
+    const reversedComplementResults = grammar.combineHeadComplement(mary, sees);
+    assert(reversedComplementResults.length === 0, `mary sees: expected no direct head-complement result.`);
+
+    const seesMary = seesMaryResults[0].category;
+    const johnSeesMaryResults = grammar.combineHeadSpecifier(seesMary, john);
+    assert(johnSeesMaryResults.length === 1, `john sees mary: expected one direct head-specifier result.`);
+    assert(johnSeesMaryResults[0].rule === "head-specifier", `john sees mary: expected head-specifier.`);
+
+    const modifiedResults = grammar.combineHeadModifier(seesMary, quickly);
+    assert(modifiedResults.length === 1, `sees mary quickly: expected one direct head-modifier result.`);
+    assert(modifiedResults[0].rule === "head-modifier", `sees mary quickly: expected head-modifier.`);
+}
+
+function getSingleTerminal(
+    terminalRules: ReturnType<typeof createExampleHpsgTerminalRules>,
+    terminal: string
+): FeatureStructure {
+    const categories = terminalRules(terminal);
+    assert(categories.length === 1, `${terminal}: expected one terminal category, got ${categories.length}.`);
+    return categories[0];
 }
 
 function runVerbLexemeConstraintTests(): void {
