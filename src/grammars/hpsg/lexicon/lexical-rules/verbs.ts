@@ -1,6 +1,7 @@
 import { FeatureStructure } from "../../../../features/features.js";
 import { TypeSystem } from "../../../../features/types.js";
 import { setHeadAgr as setHeadAgrFeature } from "../agr.js";
+import { setValenceFromArgSt } from "../valence.js";
 
 function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
     return buildSynsemFromLexeme(lexeme, "word", types);
@@ -37,37 +38,6 @@ function assertVerbLexeme(lexeme: FeatureStructure, types: TypeSystem, ruleName:
     }
 }
 
-function linearizeExpList(list: FeatureStructure): FeatureStructure[] {
-    const values: FeatureStructure[] = [];
-    let current = list.dereference();
-
-    while (current.getType() === "exp-list-cons") {
-        const first = current.get("FIRST");
-        const rest = current.get("REST");
-        if (!first || !rest) {
-            throw new Error("Malformed exp-list-cons: missing FIRST and/or REST.");
-        }
-        values.push(first);
-        current = rest.dereference();
-    }
-
-    if (current.getType() !== "exp-list-empty") {
-        throw new Error(`Malformed exp-list: expected exp-list-empty, got ${current.getType()}.`);
-    }
-
-    return values;
-}
-
-function buildExpList(values: FeatureStructure[], types: TypeSystem): FeatureStructure {
-    if (values.length === 0) return new FeatureStructure("exp-list-empty");
-
-    const [first, ...rest] = values;
-    const list = new FeatureStructure("exp-list-cons");
-    list.add("FIRST", first!, types);
-    list.add("REST", buildExpList(rest, types), types);
-    return list;
-}
-
 function setHeadForm(word: FeatureStructure, form: "base" | "fin" | "prp" | "psp", types: TypeSystem): void {
     const head = word.getIn(["SYN", "HEAD"]);
     if (!head) {
@@ -92,30 +62,10 @@ function setSubjectCase(word: FeatureStructure, caseType: "nom", types: TypeSyst
     subjectHead.add("CASE", new FeatureStructure(caseType), types);
 }
 
-function setValenceFromArgSt(word: FeatureStructure, types: TypeSystem): void {
-    const argSt = word.get("ARG-ST");
-    if (!argSt) {
-        throw new Error("Cannot apply verb lexical rule: word is missing ARG-ST.");
-    }
-
-    const args = linearizeExpList(argSt);
-    if (args.length === 0) {
-        throw new Error("Cannot apply verb lexical rule: ARG-ST must contain a subject.");
-    }
-
-    const val = word.getIn(["SYN", "VAL"]);
-    if (!val) {
-        throw new Error("Cannot apply verb lexical rule: word is missing SYN.VAL.");
-    }
-
-    val.add("SPR", buildExpList([args[0]!], types), types);
-    val.add("COMPS", buildExpList(args.slice(1), types), types);
-}
-
 function applyVerbRuleBase(lexeme: FeatureStructure, types: TypeSystem, ruleName: string): FeatureStructure {
     assertVerbLexeme(lexeme, types, ruleName);
     const word = buildWordFromLexeme(lexeme, types);
-    setValenceFromArgSt(word, types);
+    setValenceFromArgSt(word, types, ruleName);
     return word;
 }
 
@@ -166,6 +116,7 @@ export function applyPresentParticipleLexicalRule(
 ): FeatureStructure {
     assertVerbLexeme(lexeme, types, "Present Participle Lexical Rule");
     const participle = buildParticipleLexemeFromVerb(lexeme, types);
+    setValenceFromArgSt(participle, types, "Present Participle Lexical Rule");
     setHeadForm(participle, "prp", types);
     return participle;
 }
@@ -176,6 +127,7 @@ export function applyPastParticipleLexicalRule(
 ): FeatureStructure {
     assertVerbLexeme(lexeme, types, "Past Participle Lexical Rule");
     const participle = buildParticipleLexemeFromVerb(lexeme, types);
+    setValenceFromArgSt(participle, types, "Past Participle Lexical Rule");
     setHeadForm(participle, "psp", types);
     return participle;
 }

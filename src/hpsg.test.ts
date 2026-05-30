@@ -572,10 +572,46 @@ function runVerbLexicalRuleTests(): void {
         presentParticiple.getIn(["SYN", "HEAD", "FORM"])?.getType() === "prp",
         `present participle see: expected FORM prp.`
     );
+    assert(
+        sameFeatureStructure(
+            presentParticiple.getIn(["ARG-ST", "FIRST"]),
+            presentParticiple.getIn(["SYN", "VAL", "SPR", "FIRST"])
+        ),
+        `present participle see: expected ARG-ST first element and SPR first element to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            presentParticiple.getIn(["ARG-ST", "REST", "FIRST"]),
+            presentParticiple.getIn(["SYN", "VAL", "COMPS", "FIRST"])
+        ),
+        `present participle see: expected ARG-ST second element and COMPS first element to be shared.`
+    );
+    assert(
+        presentParticiple.getIn(["SYN", "VAL", "COMPS", "REST"])?.getType() === "exp-list-empty",
+        `present participle see: expected COMPS to contain one element.`
+    );
     assert(pastParticiple.getType() === "part-lxm", `past participle see: expected part-lxm.`);
     assert(
         pastParticiple.getIn(["SYN", "HEAD", "FORM"])?.getType() === "psp",
         `past participle see: expected FORM psp.`
+    );
+    assert(
+        sameFeatureStructure(
+            pastParticiple.getIn(["ARG-ST", "FIRST"]),
+            pastParticiple.getIn(["SYN", "VAL", "SPR", "FIRST"])
+        ),
+        `past participle see: expected ARG-ST first element and SPR first element to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            pastParticiple.getIn(["ARG-ST", "REST", "FIRST"]),
+            pastParticiple.getIn(["SYN", "VAL", "COMPS", "FIRST"])
+        ),
+        `past participle see: expected ARG-ST second element and COMPS first element to be shared.`
+    );
+    assert(
+        pastParticiple.getIn(["SYN", "VAL", "COMPS", "REST"])?.getType() === "exp-list-empty",
+        `past participle see: expected COMPS to contain one element.`
     );
     assert(
         sameFeatureStructure(
