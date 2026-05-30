@@ -1,5 +1,6 @@
 import { FeatureStructure } from "../../../../features/features.js";
 import { TypeSystem } from "../../../../features/types.js";
+import { setHeadAgr as setHeadAgrFeature } from "../agr.js";
 
 function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
     return buildSynsemFromLexeme(lexeme, "word", types);
@@ -80,7 +81,7 @@ function setHeadAgr(word: FeatureStructure, agrType: "3sing" | "non-3sing", type
     if (!head) {
         throw new Error("Cannot apply verb lexical rule: word is missing SYN.HEAD.");
     }
-    head.add("AGR", new FeatureStructure(agrType), types);
+    setHeadAgrFeature(head, { agr: agrType }, types, "verb lexical rule AGR");
 }
 
 function setSubjectCase(word: FeatureStructure, caseType: "nom", types: TypeSystem): void {

@@ -42,6 +42,8 @@ function runHpsgParseTests(): void {
     const cases: ParseExpectation[] = [
         { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
         { sentence: "john see mary", parses: 0 },
+        { sentence: "girls sees mary", parses: 0 },
+        { sentence: "a girl see mary", parses: 0 },
         { sentence: "i see myself", parses: 1, topRule: "head-specifier" },
         { sentence: "me see myself", parses: 0 },
         { sentence: "see mary", parses: 1, topRule: "head-complement" },
@@ -75,6 +77,7 @@ runVerbLexicalRuleTests();
 runConstantLexemeConstraintTests();
 runConstantLexemeLexicalRuleTests();
 runPronounRestrInputTests();
+runAgrNormalizationTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -128,8 +131,16 @@ function runLexemeGeneratorTests(): void {
     assert(singularGirl.getType() === "word", `singular girl: expected word.`);
     assert(pluralGirl.getType() === "word", `plural girl: expected word.`);
     assert(
+        singularGirl.getIn(["SYN", "HEAD", "AGR"])?.getType() === "3sing",
+        `singular girl: expected SYN.HEAD.AGR to be 3sing.`
+    );
+    assert(
         singularGirl.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "sg",
         `singular girl: expected SYN.HEAD.AGR.NUM to be sg.`
+    );
+    assert(
+        pluralGirl.getIn(["SYN", "HEAD", "AGR"])?.getType() === "plural",
+        `plural girl: expected SYN.HEAD.AGR to be plural.`
     );
     assert(
         pluralGirl.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "pl",
@@ -429,6 +440,73 @@ function runPronounRestrInputTests(): void {
     );
 }
 
+function runAgrNormalizationTests(): void {
+    const grammar = new HPSG();
+
+    const secondSingular = grammar.buildLexeme({
+        type: "pron-lxm",
+        form: "thyself",
+        per: "2nd",
+        num: "sg",
+        mode: "ana",
+    });
+
+    assert(
+        secondSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "2sing",
+        `thyself: expected PER=2nd and NUM=sg to normalize AGR to 2sing.`
+    );
+    assert(
+        secondSingular.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "2nd",
+        `thyself: expected AGR.PER 2nd.`
+    );
+    assert(
+        secondSingular.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "sg",
+        `thyself: expected AGR.NUM sg.`
+    );
+
+    const thirdPlural = grammar.buildLexeme({
+        type: "pron-lxm",
+        form: "they",
+        per: "3rd",
+        num: "pl",
+    });
+
+    assert(
+        thirdPlural.getIn(["SYN", "HEAD", "AGR"])?.getType() === "plural",
+        `they: expected NUM=pl to normalize AGR to plural.`
+    );
+    assert(
+        thirdPlural.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "3rd",
+        `they: expected AGR.PER 3rd.`
+    );
+
+    const explicitBroad = grammar.buildLexeme({
+        type: "pron-lxm",
+        form: "you",
+        agr: "agr-cat",
+        per: "2nd",
+    });
+
+    assert(
+        explicitBroad.getIn(["SYN", "HEAD", "AGR"])?.getType() === "agr-cat",
+        `you: expected underspecified AGR to remain agr-cat without NUM.`
+    );
+
+    let rejectedInconsistentAgr = false;
+    try {
+        grammar.buildLexeme({
+            type: "pron-lxm",
+            form: "bad",
+            agr: "3sing",
+            per: "2nd",
+            num: "sg",
+        });
+    } catch {
+        rejectedInconsistentAgr = true;
+    }
+    assert(rejectedInconsistentAgr, `bad: expected incompatible AGR and PER to be rejected.`);
+}
+
 function runVerbLexicalRuleTests(): void {
     const grammar = new HPSG();
     const see = buildCompleteLexeme({
@@ -456,6 +534,14 @@ function runVerbLexicalRuleTests(): void {
     assert(
         thirdSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "3sing",
         `third singular see: expected AGR 3sing.`
+    );
+    assert(
+        thirdSingular.getIn(["SYN", "HEAD", "AGR", "PER"])?.getType() === "3rd",
+        `third singular see: expected AGR.PER 3rd.`
+    );
+    assert(
+        thirdSingular.getIn(["SYN", "HEAD", "AGR", "NUM"])?.getType() === "sg",
+        `third singular see: expected AGR.NUM sg.`
     );
     assert(
         thirdSingular.getIn(["ARG-ST", "FIRST", "SYN", "HEAD", "CASE"])?.getType() === "nom",

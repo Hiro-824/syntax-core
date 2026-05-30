@@ -1,5 +1,6 @@
 import { FeatureStructure } from "../../../../features/features.js";
 import { TypeSystem } from "../../../../features/types.js";
+import { setHeadAgr } from "../agr.js";
 
 function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): FeatureStructure {
     const word = new FeatureStructure("word");
@@ -17,13 +18,18 @@ function buildWordFromLexeme(lexeme: FeatureStructure, types: TypeSystem): Featu
     return word;
 }
 
-function addHeadAgrNum(word: FeatureStructure, num: "sg" | "pl", types: TypeSystem): void {
-    const agr = word.getIn(["SYN", "HEAD", "AGR"]);
-    if (!agr) {
-        throw new Error("Cannot apply noun lexical rule: word is missing SYN.HEAD.AGR.");
+function setNounHeadAgr(
+    word: FeatureStructure,
+    agrType: "3sing" | "plural",
+    num: "sg" | "pl",
+    types: TypeSystem
+): void {
+    const head = word.getIn(["SYN", "HEAD"]);
+    if (!head) {
+        throw new Error("Cannot apply noun lexical rule: word is missing SYN.HEAD.");
     }
 
-    agr.add("NUM", new FeatureStructure(num), types);
+    setHeadAgr(head, { agr: agrType, num }, types, "noun lexical rule AGR");
 }
 
 export function applySingularNounLexicalRule(
@@ -36,7 +42,7 @@ export function applySingularNounLexicalRule(
     }
 
     const word = buildWordFromLexeme(lexeme, types);
-    addHeadAgrNum(word, "sg", types);
+    setNounHeadAgr(word, "3sing", "sg", types);
     return word;
 }
 
@@ -50,6 +56,6 @@ export function applyPluralNounLexicalRule(
     }
 
     const word = buildWordFromLexeme(lexeme, types);
-    addHeadAgrNum(word, "pl", types);
+    setNounHeadAgr(word, "plural", "pl", types);
     return word;
 }

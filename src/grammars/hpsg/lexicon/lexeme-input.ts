@@ -54,7 +54,7 @@ export type ProperNounLexemeInput = ConstantLexemeInputBase & {
 export type PronounLexemeInput = ConstantLexemeInputBase & {
     type: "pron-lxm";
     case?: "nom" | "acc";
-    agr?: "1sing" | "3sing" | "plural" | "agr-cat";
+    agr?: "1sing" | "2sing" | "3sing" | "plural" | "non-3sing" | "agr-cat";
     per?: "1st" | "2nd" | "3rd";
     num?: "sg" | "pl";
     gend?: "fem" | "masc" | "neut";

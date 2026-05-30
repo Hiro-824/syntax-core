@@ -3,6 +3,7 @@ import { TypeSystem } from "../../../features/types.js";
 import { LexemeInput } from "./lexeme-input.js";
 import { getLexemeConstraintChain } from "./lexeme-constraints.js";
 import { ensureLexemeInputRelns } from "../type-system/relns.js";
+import { buildAgrInput } from "./agr.js";
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
     if (input.type === "pron-lxm") {
@@ -23,13 +24,7 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
             head["CASE"] = input.case;
         }
         if (input.agr || input.per || input.num || input.gend) {
-            const agr: FeatureStructureInput = {
-                "type": input.agr ?? "agr-cat",
-            };
-            if (input.per) agr["PER"] = input.per;
-            if (input.num) agr["NUM"] = input.num;
-            if (input.gend) agr["GEND"] = input.gend;
-            head["AGR"] = agr;
+            head["AGR"] = buildAgrInput(input, `pronoun ${input.form} AGR`);
         }
 
         const sem: FeatureStructureInput = {
