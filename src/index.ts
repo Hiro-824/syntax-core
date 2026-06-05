@@ -6,7 +6,6 @@ export type { Attribute, FeatureStructureAVM, FeatureStructureInput } from "./fe
 
 export { CFG, createCFGTerminalRules } from "./grammars/cfg/cfg.js";
 export { HPSG } from "./grammars/hpsg/hpsg.js";
-export { HPSGBinaryRules } from "./grammars/hpsg/syntax/binary-rules.js";
 export type {
     ConstantLexemeInput,
     ConstantWords,

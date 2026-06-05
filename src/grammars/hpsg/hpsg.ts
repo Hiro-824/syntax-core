@@ -1,3 +1,4 @@
+import { BinaryRules } from "../../core/parser.js";
 import { FeatureStructure } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { buildCompleteLexeme } from "./lexicon/lexeme-builder.js";
@@ -20,7 +21,6 @@ import {
     applyThirdSingularVerbLexicalRule,
 } from "./lexicon/lexical-rules/verbs.js";
 import { buildExpList, concatExpList, linearizeExpList } from "./lexicon/valence.js";
-import { HPSGBinaryRules } from "./syntax/binary-rules.js";
 import { enforceBindingTheory } from "./syntax/principles/binding.js";
 import { concatPredList, getRestr } from "./syntax/principles/semantics.js";
 import { typeDefinition } from "./type-system/definition.js";
@@ -66,12 +66,14 @@ type IndexedWordMap = Map<number, FeatureStructure[]>;
 
 export class HPSG {
     readonly types: TypeSystem;
-    readonly binaryRules: HPSGBinaryRules;
+    readonly binaryRules: BinaryRules<FeatureStructure>;
 
     constructor() {
         this.types = new TypeSystem();
         this.types.loadDefinition(typeDefinition);
-        this.binaryRules = new HPSGBinaryRules(this.types);
+        this.binaryRules = {
+            combine: (left, right) => this.combineAdjacent(left, right),
+        };
     }
 
     buildLexeme(input: LexemeInput): FeatureStructure {
@@ -79,28 +81,51 @@ export class HPSG {
     }
 
     combine(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combine(left, right);
+        return this.combineAdjacent(left, right);
+    }
+
+    combineAdjacent(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
+        const leftHeadResults = this.combineIndexed({
+            words: { 1: left, 2: right },
+            head: 1,
+        }).map(category => ({ category, rule: "indexed-left-head" }));
+
+        const rightHeadResults = this.combineIndexed({
+            words: { 1: left, 2: right },
+            head: 2,
+        }).map(category => ({ category, rule: "indexed-right-head" }));
+
+        return [...leftHeadResults, ...rightHeadResults];
     }
 
     combineHeadComplement(
         head: FeatureStructure,
         complement: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combineHeadComplement(head, complement);
+        return this.combineIndexed({
+            words: { 1: head, 2: complement },
+            head: 1,
+        }).map(category => ({ category, rule: "indexed-head-complement" }));
     }
 
     combineHeadSpecifier(
         head: FeatureStructure,
         specifier: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combineHeadSpecifier(head, specifier);
+        return this.combineIndexed({
+            words: { 1: specifier, 2: head },
+            head: 2,
+        }).map(category => ({ category, rule: "indexed-head-specifier" }));
     }
 
     combineHeadModifier(
         head: FeatureStructure,
         modifier: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combineHeadModifier(head, modifier);
+        return this.combineIndexed({
+            words: { 1: head, 2: modifier },
+            head: 1,
+        }).map(category => ({ category, rule: "indexed-head-modifier" }));
     }
 
     combineIndexed(input: IndexedHpsgInput): FeatureStructure[] {
@@ -240,6 +265,21 @@ export class HPSG {
             }
         }
 
+        if (leftPositions.length === 0 && rightPositions.length === 1) {
+            const modifierPosition = rightPositions[0]!;
+            for (const selection of this.buildIndexedSelections(words, [modifierPosition])) {
+                const copyMemo = new Map<FeatureStructure, FeatureStructure>();
+                const candidateHead = head.deepCopy(copyMemo, this.types);
+                const candidate = this.applyIndexedModifierPolicy(
+                    selection,
+                    candidateHead,
+                    modifierPosition,
+                    copyMemo,
+                );
+                if (candidate) results.push(candidate);
+            }
+        }
+
         return results;
     }
 
@@ -366,6 +406,42 @@ export class HPSG {
         } catch {
             return null;
         }
+    }
+
+    private applyIndexedModifierPolicy(
+        selection: Map<number, FeatureStructure>,
+        candidateHead: FeatureStructure,
+        modifierPosition: number,
+        copyMemo: Map<FeatureStructure, FeatureStructure>,
+    ): FeatureStructure | null {
+        try {
+            const modifier = this.getSelectedIndexedCandidate(selection, modifierPosition, copyMemo);
+            const modifierSpr = modifier.getIn(["SYN", "VAL", "SPR"]);
+            const modifierComps = modifier.getIn(["SYN", "VAL", "COMPS"]);
+            const modifierMod = modifier.getIn(["SYN", "VAL", "MOD"]);
+            if (!modifierSpr || !modifierComps || !modifierMod) return null;
+            if (linearizeExpList(modifierSpr).length !== 0) return null;
+            if (linearizeExpList(modifierComps).length !== 0) return null;
+
+            const modifierTargets = linearizeExpList(modifierMod);
+            if (modifierTargets.length === 0) return null;
+
+            FeatureStructure.unify(modifierTargets[0]!, candidateHead, this.types);
+
+            const remainingSpr = this.linearizeHeadValence(candidateHead, "SPR");
+            const remainingComps = this.linearizeHeadValence(candidateHead, "COMPS");
+            return this.buildIndexedMother(candidateHead, remainingSpr, remainingComps, [], [modifier.dereference()]);
+        } catch {
+            return null;
+        }
+    }
+
+    private linearizeHeadValence(head: FeatureStructure, attribute: "SPR" | "COMPS"): FeatureStructure[] {
+        const list = head.getIn(["SYN", "VAL", attribute]);
+        if (!list) {
+            throw new Error(`Cannot linearize head ${attribute}: missing SYN.VAL.${attribute}.`);
+        }
+        return linearizeExpList(list).map(item => item.dereference());
     }
 
     private getSelectedIndexedCandidate(

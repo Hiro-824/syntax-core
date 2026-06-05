@@ -40,14 +40,14 @@ function runHpsgParseTests(): void {
     const terminalRules = createExampleHpsgTerminalRules(grammar);
 
     const cases: ParseExpectation[] = [
-        { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
+        { sentence: "john sees mary", parses: 2 },
         { sentence: "john see mary", parses: 0 },
         { sentence: "girls sees mary", parses: 0 },
         { sentence: "a girl see mary", parses: 0 },
-        { sentence: "i see myself", parses: 1, topRule: "head-specifier" },
+        { sentence: "i see myself", parses: 2 },
         { sentence: "me see myself", parses: 0 },
-        { sentence: "see mary", parses: 1, topRule: "head-complement" },
-        { sentence: "the telescope", parses: 1, topRule: "head-specifier" },
+        { sentence: "see mary", parses: 2 },
+        { sentence: "the telescope", parses: 1, topRule: "indexed-right-head" },
         { sentence: "a water", parses: 0 },
     ];
 
@@ -224,8 +224,11 @@ function runDirectHpsgCombineTests(): void {
     const quickly = getSingleTerminal(terminalRules, "quickly");
 
     const seesMaryResults = grammar.combineHeadComplement(sees, mary);
-    assert(seesMaryResults.length === 1, `sees mary: expected one direct head-complement result.`);
-    assert(seesMaryResults[0].rule === "head-complement", `sees mary: expected head-complement.`);
+    assert(seesMaryResults.length === 2, `sees mary: expected indexed head-complement keep/gap variants.`);
+    assert(
+        seesMaryResults.every(result => result.rule === "indexed-head-complement"),
+        `sees mary: expected indexed head-complement.`
+    );
 
     const reversedComplementResults = grammar.combineHeadComplement(mary, sees);
     assert(reversedComplementResults.length === 0, `mary sees: expected no direct head-complement result.`);
@@ -233,11 +236,26 @@ function runDirectHpsgCombineTests(): void {
     const seesMary = seesMaryResults[0].category;
     const johnSeesMaryResults = grammar.combineHeadSpecifier(seesMary, john);
     assert(johnSeesMaryResults.length === 1, `john sees mary: expected one direct head-specifier result.`);
-    assert(johnSeesMaryResults[0].rule === "head-specifier", `john sees mary: expected head-specifier.`);
+    assert(johnSeesMaryResults[0].rule === "indexed-head-specifier", `john sees mary: expected indexed head-specifier.`);
 
     const modifiedResults = grammar.combineHeadModifier(seesMary, quickly);
     assert(modifiedResults.length === 1, `sees mary quickly: expected one direct head-modifier result.`);
-    assert(modifiedResults[0].rule === "head-modifier", `sees mary quickly: expected head-modifier.`);
+    assert(modifiedResults[0].rule === "indexed-head-modifier", `sees mary quickly: expected indexed head-modifier.`);
+
+    const indexedModifiedResults = grammar.combineAdjacent(seesMary, quickly);
+    assert(indexedModifiedResults.length === 1, `sees mary quickly: expected one indexed modifier result.`);
+    assert(
+        indexedModifiedResults[0].rule === "indexed-left-head",
+        `sees mary quickly: expected indexed left-head modifier result.`
+    );
+    assert(
+        indexedModifiedResults[0].category.getIn(["SYN", "VAL", "COMPS"])?.getType() === "exp-list-empty",
+        `sees mary quickly: expected indexed modifier result to preserve empty COMPS.`
+    );
+    assert(
+        indexedModifiedResults[0].category.getIn(["SYN", "VAL", "SPR"])?.getType() === "exp-list-cons",
+        `sees mary quickly: expected indexed modifier result to preserve pending SPR.`
+    );
 }
 
 function runIndexedHpsgCombineTests(): void {
@@ -307,6 +325,21 @@ function runIndexedHpsgCombineTests(): void {
     assert(signatures.has("0/2/1"), `send: expected variant gapping SPR and keeping COMPS.`);
     assert(signatures.has("1/0/2"), `send: expected variant keeping SPR and gapping COMPS.`);
     assert(signatures.has("0/0/3"), `send: expected variant gapping SPR and COMPS.`);
+
+    const indexedAdjacentResults = grammar.combineAdjacent(send, theTelescope);
+    const binaryAdapterResults = grammar.binaryRules.combine(send, theTelescope);
+    assert(
+        indexedAdjacentResults.length === binaryAdapterResults.length,
+        `indexed binary adapter: expected combineAdjacent and binaryRules to return the same number of results.`
+    );
+    assert(
+        indexedAdjacentResults.length === 4,
+        `indexed binary adapter: expected send + NP to produce left-edge/right-edge keep/gap variants.`
+    );
+    assert(
+        binaryAdapterResults.every(result => result.rule === "indexed-left-head"),
+        `indexed binary adapter: expected send + NP results to come from the left-head indexed pattern.`
+    );
 }
 
 function expListLength(list: FeatureStructure | undefined): number {
