@@ -1,7 +1,7 @@
 import { FeatureStructure } from "../../../features/features.js";
 import { TypeSystem } from "../../../features/types.js";
 
-function linearizeExpList(list: FeatureStructure): FeatureStructure[] {
+export function linearizeExpList(list: FeatureStructure): FeatureStructure[] {
     const values: FeatureStructure[] = [];
     let current = list.dereference();
 
@@ -22,7 +22,7 @@ function linearizeExpList(list: FeatureStructure): FeatureStructure[] {
     return values;
 }
 
-function buildExpList(values: FeatureStructure[], types: TypeSystem): FeatureStructure {
+export function buildExpList(values: FeatureStructure[], types: TypeSystem): FeatureStructure {
     if (values.length === 0) return new FeatureStructure("exp-list-empty");
 
     const [first, ...rest] = values;
@@ -30,6 +30,30 @@ function buildExpList(values: FeatureStructure[], types: TypeSystem): FeatureStr
     list.add("FIRST", first!, types);
     list.add("REST", buildExpList(rest, types), types);
     return list;
+}
+
+export function concatExpList(prefix: FeatureStructure, suffix: FeatureStructure, types: TypeSystem): FeatureStructure {
+    const p = prefix.dereference();
+    const s = suffix.dereference();
+
+    const t = p.getType();
+    if (t === "exp-list-empty") return s;
+    if (t !== "exp-list-cons") {
+        throw new Error(`Unsupported exp-list type for concatenation: ${t}`);
+    }
+
+    const first = p.get("FIRST");
+    if (!first) {
+        throw new Error("Malformed exp-list-cons: missing FIRST.");
+    }
+
+    const rest = p.get("REST");
+    const newRest = rest ? concatExpList(rest, s, types) : s;
+
+    const out = new FeatureStructure("exp-list-cons");
+    out.add("FIRST", first, types);
+    out.add("REST", newRest, types);
+    return out;
 }
 
 export function setValenceFromArgSt(synsem: FeatureStructure, types: TypeSystem, context = "lexical rule"): void {

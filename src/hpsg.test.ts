@@ -78,6 +78,8 @@ runConstantLexemeConstraintTests();
 runConstantLexemeLexicalRuleTests();
 runPronounRestrInputTests();
 runAgrNormalizationTests();
+runSynCatGapFeatureTests();
+runIndexedHpsgCombineTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -163,6 +165,52 @@ function runLexemeGeneratorTests(): void {
     assert(rejectedMassPlural, `water: expected Plural Noun Lexical Rule to reject massn-lxm.`);
 }
 
+function runSynCatGapFeatureTests(): void {
+    const grammar = new HPSG();
+
+    assert(
+        grammar.types.getAppropriateType("syn-cat", "GAP") === "exp-list",
+        `syn-cat: expected GAP appropriate type to be exp-list.`
+    );
+    assert(
+        grammar.types.getAppropriateType("syn-cat", "STOP-GAP") === "exp-list",
+        `syn-cat: expected STOP-GAP appropriate type to be exp-list.`
+    );
+
+    const synCat = FeatureStructure.fromJSON({
+        type: "syn-cat",
+        HEAD: "noun",
+        VAL: {
+            type: "val-cat",
+            SPR: "exp-list-empty",
+            COMPS: "exp-list-empty",
+            MOD: "exp-list-empty",
+        },
+        GAP: "exp-list-empty",
+        "STOP-GAP": {
+            type: "exp-list-cons",
+            FIRST: {
+                type: "expression",
+            },
+            REST: "exp-list-empty",
+        },
+    }, grammar.types);
+
+    assert(synCat.get("GAP")?.getType() === "exp-list-empty", `syn-cat: expected GAP list.`);
+    assert(synCat.get("STOP-GAP")?.getType() === "exp-list-cons", `syn-cat: expected STOP-GAP list.`);
+
+    let rejectedNonListGap = false;
+    try {
+        FeatureStructure.fromJSON({
+            type: "syn-cat",
+            GAP: "noun",
+        }, grammar.types);
+    } catch {
+        rejectedNonListGap = true;
+    }
+    assert(rejectedNonListGap, `syn-cat: expected GAP to reject non exp-list values.`);
+}
+
 function runDirectHpsgCombineTests(): void {
     const grammar = new HPSG();
     const terminalRules = createExampleHpsgTerminalRules(grammar, [
@@ -190,6 +238,91 @@ function runDirectHpsgCombineTests(): void {
     const modifiedResults = grammar.combineHeadModifier(seesMary, quickly);
     assert(modifiedResults.length === 1, `sees mary quickly: expected one direct head-modifier result.`);
     assert(modifiedResults[0].rule === "head-modifier", `sees mary quickly: expected head-modifier.`);
+}
+
+function runIndexedHpsgCombineTests(): void {
+    const grammar = new HPSG();
+    const terminalRules = createExampleHpsgTerminalRules(grammar);
+
+    const i = getSingleTerminal(terminalRules, "i");
+    const sendInput = lexemeData.find(input => input.type === "dtv-lxm" && input.base === "send");
+    if (!sendInput || sendInput.type !== "dtv-lxm") throw new Error(`expected ditransitive send lexeme data.`);
+    const send = grammar.buildVerbWords(sendInput).nonThirdSingular;
+    const the = getSingleTerminal(terminalRules, "the");
+    const telescope = getSingleTerminal(terminalRules, "telescope");
+    const theTelescopeResults = grammar.combineHeadSpecifier(telescope, the);
+    assert(theTelescopeResults.length === 1, `the telescope: expected one NP result.`);
+    const theTelescope = theTelescopeResults[0].category;
+
+    const internalGapResults = grammar.combineIndexed({
+        words: {
+            1: i,
+            2: send,
+            4: theTelescope,
+        },
+        head: 2,
+    });
+
+    assert(internalGapResults.length === 1, `i send ___ the telescope: expected one indexed result.`);
+    const internalGap = internalGapResults[0];
+    assert(internalGap.getType() === "phrase", `indexed result: expected phrase.`);
+    assert(internalGap.getIn(["SYN", "VAL", "SPR"])?.getType() === "exp-list-empty", `indexed result: expected SPR consumed.`);
+    assert(internalGap.getIn(["SYN", "VAL", "COMPS"])?.getType() === "exp-list-empty", `indexed result: expected COMPS consumed.`);
+    assert(expListLength(internalGap.getIn(["SYN", "GAP"])) === 1, `indexed result: expected one internal GAP.`);
+    assert(
+        internalGap.getIn(["SYN", "HEAD", "AGR"])?.getType() === "1sing",
+        `indexed result: expected subject AGR unification to update head AGR.`
+    );
+    assert(
+        sameFeatureStructure(
+            internalGap.getIn(["SYN", "GAP", "FIRST"]),
+            internalGap.getIn(["ARG-ST", "REST", "FIRST"])
+        ),
+        `indexed result: expected GAP object and ARG-ST object to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            internalGap.getIn(["SYN", "GAP", "FIRST", "SEM", "INDEX"]),
+            internalGap.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
+        ),
+        `indexed result: expected GAP object index and verbal ARG2 to be shared.`
+    );
+
+    const edgeResults = grammar.combineIndexed({
+        words: {
+            2: send,
+        },
+        head: 2,
+    });
+
+    assert(edgeResults.length === 4, `send: expected four edge GAP/keep variants.`);
+    const signatures = new Set(edgeResults.map(result =>
+        [
+            expListLength(result.getIn(["SYN", "VAL", "SPR"])),
+            expListLength(result.getIn(["SYN", "VAL", "COMPS"])),
+            expListLength(result.getIn(["SYN", "GAP"])),
+        ].join("/")
+    ));
+    assert(signatures.has("1/2/0"), `send: expected variant keeping SPR and COMPS.`);
+    assert(signatures.has("0/2/1"), `send: expected variant gapping SPR and keeping COMPS.`);
+    assert(signatures.has("1/0/2"), `send: expected variant keeping SPR and gapping COMPS.`);
+    assert(signatures.has("0/0/3"), `send: expected variant gapping SPR and COMPS.`);
+}
+
+function expListLength(list: FeatureStructure | undefined): number {
+    if (!list) throw new Error(`expected exp-list to be present.`);
+    let length = 0;
+    let current = list.dereference();
+
+    while (current.getType() === "exp-list-cons") {
+        const rest = current.get("REST");
+        if (!rest) throw new Error(`malformed exp-list-cons: missing REST.`);
+        length++;
+        current = rest.dereference();
+    }
+
+    assert(current.getType() === "exp-list-empty", `expected exp-list-empty, got ${current.getType()}.`);
+    return length;
 }
 
 function getSingleTerminal(

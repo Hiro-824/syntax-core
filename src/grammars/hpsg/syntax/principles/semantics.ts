@@ -1,12 +1,12 @@
 import { FeatureStructure } from "../../../../features/features.js";
 import { TypeSystem } from "../../../../features/types.js";
 
-function getRestr(expr: FeatureStructure): FeatureStructure {
+export function getRestr(expr: FeatureStructure): FeatureStructure {
     const restr = expr.getIn(["SEM", "RESTR"]);
     return restr ?? new FeatureStructure("pred-list-empty");
 }
 
-function concatPredList(prefix: FeatureStructure, suffix: FeatureStructure, types: TypeSystem): FeatureStructure {
+export function concatPredList(prefix: FeatureStructure, suffix: FeatureStructure, types: TypeSystem): FeatureStructure {
     const p = prefix.dereference();
     const s = suffix.dereference();
 

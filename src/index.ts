@@ -11,6 +11,7 @@ export type {
     ConstantLexemeInput,
     ConstantWords,
     CountNounWords,
+    IndexedHpsgInput,
     MassNounWords,
     VerbLexemeInput,
     VerbWords,
