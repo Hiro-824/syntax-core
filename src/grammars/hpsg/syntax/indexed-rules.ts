@@ -6,12 +6,28 @@ import { enforceBindingTheory } from "./principles/binding.js";
 import { setMotherGapAsSum } from "./principles/gap.js";
 import { concatPredList, getRestr } from "./principles/semantics.js";
 
-export type IndexedHpsgInput = {
-    words: Record<number, FeatureStructure | FeatureStructure[]>;
-    head: number;
+export type IndexedHpsgRole = "specifier" | "head" | "complement" | "modifier";
+
+export type IndexedHpsgPosition = {
+    role: IndexedHpsgRole;
+    value?: FeatureStructure | FeatureStructure[] | null;
 };
 
-type IndexedWordMap = Map<number, FeatureStructure[]>;
+export type IndexedHpsgInput = {
+    positions: IndexedHpsgPosition[];
+};
+
+type NormalizedPosition = {
+    role: IndexedHpsgRole;
+    candidates: FeatureStructure[];
+};
+
+type IndexedSelection = Map<number, FeatureStructure>;
+
+type GapPolicy = {
+    gapLeftEdge: boolean;
+    gapRightEdge: boolean;
+};
 
 export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
     readonly binaryRules: BinaryRules<FeatureStructure>;
@@ -27,15 +43,33 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
     }
 
     combineAdjacent(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
-        const leftHeadResults = this.combineIndexed({
-            words: { 1: left, 2: right },
-            head: 1,
-        }).map(category => ({ category, rule: "indexed-left-head" }));
+        const leftHeadResults = [
+            ...this.combineIndexed({
+                positions: this.buildArgumentPositions(left, {
+                    complement: right,
+                }),
+            }),
+            ...this.combineIndexed({
+                positions: [
+                    { role: "head", value: left },
+                    { role: "modifier", value: right },
+                ],
+            }),
+        ].map(category => ({ category, rule: "indexed-left-head" }));
 
-        const rightHeadResults = this.combineIndexed({
-            words: { 1: left, 2: right },
-            head: 2,
-        }).map(category => ({ category, rule: "indexed-right-head" }));
+        const rightHeadResults = [
+            ...this.combineIndexed({
+                positions: this.buildArgumentPositions(right, {
+                    specifier: left,
+                }),
+            }),
+            ...this.combineIndexed({
+                positions: [
+                    { role: "modifier", value: left },
+                    { role: "head", value: right },
+                ],
+            }),
+        ].map(category => ({ category, rule: "indexed-right-head" }));
 
         return [...leftHeadResults, ...rightHeadResults];
     }
@@ -45,8 +79,7 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         complement: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
         return this.combineIndexed({
-            words: { 1: head, 2: complement },
-            head: 1,
+            positions: this.buildArgumentPositions(head, { complement }),
         }).map(category => ({ category, rule: "indexed-head-complement" }));
     }
 
@@ -55,8 +88,7 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         specifier: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
         return this.combineIndexed({
-            words: { 1: specifier, 2: head },
-            head: 2,
+            positions: this.buildArgumentPositions(head, { specifier }),
         }).map(category => ({ category, rule: "indexed-head-specifier" }));
     }
 
@@ -65,60 +97,98 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         modifier: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
         return this.combineIndexed({
-            words: { 1: head, 2: modifier },
-            head: 1,
+            positions: [
+                { role: "head", value: head },
+                { role: "modifier", value: modifier },
+            ],
         }).map(category => ({ category, rule: "indexed-head-modifier" }));
     }
 
     combineIndexed(input: IndexedHpsgInput): FeatureStructure[] {
-        const words = this.normalizeIndexedWords(input.words);
-        const headCandidates = words.get(input.head);
-        if (!headCandidates) return [];
+        const positions = this.normalizePositions(input.positions);
+        const headIndices = positions.flatMap((position, index) =>
+            position.role === "head" ? [index] : []
+        );
 
-        const results: FeatureStructure[] = [];
-
-        for (const head of headCandidates) {
-            results.push(...this.combineIndexedHeadCandidate(words, input.head, head));
+        if (headIndices.length !== 1) {
+            throw new Error(`Indexed HPSG input must contain exactly one head position.`);
         }
 
-        return results;
+        const headIndex = headIndices[0]!;
+        const headCandidates = positions[headIndex]!.candidates;
+        if (headCandidates.length === 0) {
+            throw new Error(`Indexed HPSG head position must contain at least one candidate.`);
+        }
+        positions.forEach((position, index) => {
+            if (position.role === "specifier" && index > headIndex) {
+                throw new Error(`Indexed HPSG specifier positions must precede the head.`);
+            }
+            if (position.role === "complement" && index < headIndex) {
+                throw new Error(`Indexed HPSG complement positions must follow the head.`);
+            }
+            if (position.role === "modifier" && position.candidates.length === 0) {
+                throw new Error(`Indexed HPSG modifier positions must contain at least one candidate.`);
+            }
+        });
+
+        return headCandidates.flatMap(head =>
+            this.combineIndexedHeadCandidate(positions, headIndex, head)
+        );
     }
 
-    private normalizeIndexedWords(words: IndexedHpsgInput["words"]): IndexedWordMap {
-        const normalized: IndexedWordMap = new Map();
+    private normalizePositions(positions: IndexedHpsgPosition[]): NormalizedPosition[] {
+        return positions.map(position => ({
+            role: position.role,
+            candidates: position.value == null
+                ? []
+                : Array.isArray(position.value)
+                    ? position.value
+                    : [position.value],
+        }));
+    }
 
-        for (const [positionString, value] of Object.entries(words)) {
-            const position = Number(positionString);
-            if (!Number.isInteger(position)) {
-                throw new Error(`Indexed HPSG input contains a non-integer position: ${positionString}.`);
-            }
-            normalized.set(position, Array.isArray(value) ? value : [value]);
+    private buildArgumentPositions(
+        head: FeatureStructure,
+        realized: {
+            specifier?: FeatureStructure;
+            complement?: FeatureStructure;
+        },
+    ): IndexedHpsgPosition[] {
+        const sprSlots = this.linearizeHeadValence(head, "SPR");
+        const compSlots = this.linearizeHeadValence(head, "COMPS");
+        const specifiers = sprSlots.map((_, index): IndexedHpsgPosition => ({
+            role: "specifier",
+            value: index === 0 ? realized.specifier : undefined,
+        }));
+        const complements = compSlots.map((_, index): IndexedHpsgPosition => ({
+            role: "complement",
+            value: index === 0 ? realized.complement : undefined,
+        }));
+
+        if (realized.specifier && specifiers.length === 0) {
+            specifiers.push({ role: "specifier", value: realized.specifier });
+        }
+        if (realized.complement && complements.length === 0) {
+            complements.push({ role: "complement", value: realized.complement });
         }
 
-        return normalized;
+        return [
+            ...specifiers,
+            { role: "head", value: head },
+            ...complements,
+        ];
     }
 
     private combineIndexedHeadCandidate(
-        words: IndexedWordMap,
-        headPosition: number,
+        positions: NormalizedPosition[],
+        headIndex: number,
         head: FeatureStructure
     ): FeatureStructure[] {
-        const positions = [...words.keys()].sort((a, b) => a - b);
-        const leftPositions = positions.filter(position => position < headPosition);
-        const rightPositions = positions.filter(position => position > headPosition);
-        const specifierPosition = leftPositions[0];
-        const rightSlotByPosition = new Map<number, number>();
-
-        for (const position of rightPositions) {
-            rightSlotByPosition.set(position, position - headPosition - 1);
-        }
-
-        const policies = this.buildEdgeGapPolicies(head, specifierPosition !== undefined, rightSlotByPosition);
-        const relevantPositions = [
-            ...(specifierPosition === undefined ? [] : [specifierPosition]),
-            ...rightPositions,
-        ];
-        const selections = this.buildIndexedSelections(words, relevantPositions);
+        const selectionIndices = positions.flatMap((position, index) =>
+            index !== headIndex && position.candidates.length > 0 ? [index] : []
+        );
+        const selections = this.buildIndexedSelections(positions, selectionIndices);
+        const policies = this.buildEdgeGapPolicies(head, positions);
         const results: FeatureStructure[] = [];
 
         for (const policy of policies) {
@@ -126,26 +196,10 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
                 const copyMemo = new Map<FeatureStructure, FeatureStructure>();
                 const candidateHead = head.deepCopy(copyMemo, this.types);
                 const candidate = this.applyIndexedPolicy(
+                    positions,
                     selection,
                     candidateHead,
-                    specifierPosition,
-                    rightSlotByPosition,
                     policy,
-                    copyMemo,
-                );
-                if (candidate) results.push(candidate);
-            }
-        }
-
-        if (leftPositions.length === 0 && rightPositions.length === 1) {
-            const modifierPosition = rightPositions[0]!;
-            for (const selection of this.buildIndexedSelections(words, [modifierPosition])) {
-                const copyMemo = new Map<FeatureStructure, FeatureStructure>();
-                const candidateHead = head.deepCopy(copyMemo, this.types);
-                const candidate = this.applyIndexedModifierPolicy(
-                    selection,
-                    candidateHead,
-                    modifierPosition,
                     copyMemo,
                 );
                 if (candidate) results.push(candidate);
@@ -156,20 +210,18 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
     }
 
     private buildIndexedSelections(
-        words: IndexedWordMap,
-        positions: number[],
-    ): Array<Map<number, FeatureStructure>> {
-        const [position, ...rest] = positions;
-        if (position === undefined) return [new Map()];
+        positions: NormalizedPosition[],
+        indices: number[],
+    ): IndexedSelection[] {
+        const [index, ...rest] = indices;
+        if (index === undefined) return [new Map()];
 
-        const values = words.get(position);
-        if (!values || values.length === 0) return [];
-
-        const tails = this.buildIndexedSelections(words, rest);
+        const values = positions[index]!.candidates;
+        const tails = this.buildIndexedSelections(positions, rest);
         return values.flatMap(value =>
             tails.map(tail => {
                 const selection = new Map(tail);
-                selection.set(position, value);
+                selection.set(index, value);
                 return selection;
             })
         );
@@ -177,27 +229,39 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
 
     private buildEdgeGapPolicies(
         head: FeatureStructure,
-        hasSpecifier: boolean,
-        rightSlotByPosition: Map<number, number>
-    ): Array<{ gapLeftEdge: boolean; gapRightEdge: boolean }> {
+        positions: NormalizedPosition[],
+    ): GapPolicy[] {
         const spr = head.getIn(["SYN", "VAL", "SPR"]);
         const comps = head.getIn(["SYN", "VAL", "COMPS"]);
         if (!spr || !comps) return [];
 
         const sprSlots = linearizeExpList(spr);
         const compSlots = linearizeExpList(comps);
-        const actualCompSlots = new Set(rightSlotByPosition.values());
+        const specifierPositions = positions.filter(position => position.role === "specifier");
+        const complementPositions = positions.filter(position => position.role === "complement");
 
-        if ([...actualCompSlots].some(slot => slot < 0 || slot >= compSlots.length)) return [];
+        if (specifierPositions.length > sprSlots.length || complementPositions.length > compSlots.length) {
+            return [];
+        }
 
-        const consumedSprCount = hasSpecifier ? 1 : 0;
-        if (consumedSprCount > sprSlots.length) return [];
-
-        const hasLeftEdgeMissing = sprSlots.length > consumedSprCount;
-        const hasRightEdgeMissing = compSlots.some((_, index) => {
-            if (actualCompSlots.has(index)) return false;
-            return ![...actualCompSlots].some(actualIndex => actualIndex > index);
-        });
+        const occupiedSpr = new Set(
+            specifierPositions.flatMap((position, index) =>
+                position.candidates.length > 0 ? [index] : []
+            )
+        );
+        const occupiedComps = new Set(
+            complementPositions.flatMap((position, index) =>
+                position.candidates.length > 0 ? [index] : []
+            )
+        );
+        const internalSpr = this.findInternalMissingSlots(sprSlots.length, occupiedSpr);
+        const internalComps = this.findInternalMissingSlots(compSlots.length, occupiedComps);
+        const hasLeftEdgeMissing = specifierPositions.some((_, index) =>
+            !occupiedSpr.has(index) && !internalSpr.has(index)
+        );
+        const hasRightEdgeMissing = complementPositions.some((_, index) =>
+            !occupiedComps.has(index) && !internalComps.has(index)
+        );
 
         const leftOptions = hasLeftEdgeMissing ? [false, true] : [false];
         const rightOptions = hasRightEdgeMissing ? [false, true] : [false];
@@ -207,12 +271,24 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         );
     }
 
+    private findInternalMissingSlots(slotCount: number, occupiedSlots: Set<number>): Set<number> {
+        const internal = new Set<number>();
+
+        for (let index = 0; index < slotCount; index++) {
+            if (occupiedSlots.has(index)) continue;
+            if ([...occupiedSlots].some(occupiedIndex => occupiedIndex > index)) {
+                internal.add(index);
+            }
+        }
+
+        return internal;
+    }
+
     private applyIndexedPolicy(
-        selection: Map<number, FeatureStructure>,
+        positions: NormalizedPosition[],
+        selection: IndexedSelection,
         candidateHead: FeatureStructure,
-        specifierPosition: number | undefined,
-        rightSlotByPosition: Map<number, number>,
-        policy: { gapLeftEdge: boolean; gapRightEdge: boolean },
+        policy: GapPolicy,
         copyMemo: Map<FeatureStructure, FeatureStructure>,
     ): FeatureStructure | null {
         try {
@@ -222,55 +298,88 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
 
             const sprSlots = linearizeExpList(spr);
             const compSlots = linearizeExpList(comps);
-            const consumedSpr = new Set<number>();
-            const consumedComps = new Set<number>();
+            const specifierPositions = positions.flatMap((position, index) =>
+                position.role === "specifier" ? [{ position, index }] : []
+            );
+            const complementPositions = positions.flatMap((position, index) =>
+                position.role === "complement" ? [{ position, index }] : []
+            );
+            const occupiedSpr = new Set<number>();
+            const occupiedComps = new Set<number>();
             const gapItems: FeatureStructure[] = [];
-            const realizedNonHeads: FeatureStructure[] = [];
-            let appliedSpecifier = false;
+            const realizedByPosition = new Map<number, FeatureStructure>();
 
-            if (specifierPosition !== undefined) {
-                if (sprSlots.length === 0) return null;
-                const specifier = this.getSelectedIndexedCandidate(selection, specifierPosition, copyMemo);
-                FeatureStructure.unify(sprSlots[0]!, specifier, this.types);
-                consumedSpr.add(0);
-                realizedNonHeads.push(specifier.dereference());
-                appliedSpecifier = true;
+            for (let slot = 0; slot < specifierPositions.length; slot++) {
+                const entry = specifierPositions[slot]!;
+                if (entry.position.candidates.length === 0) continue;
+
+                const specifier = this.getSelectedCandidate(selection, entry.index, copyMemo);
+                FeatureStructure.unify(sprSlots[slot]!, specifier, this.types);
+                occupiedSpr.add(slot);
+                realizedByPosition.set(entry.index, specifier.dereference());
             }
 
-            const actualCompSlots = new Set(rightSlotByPosition.values());
-            if ([...actualCompSlots].some(slot => slot < 0 || slot >= compSlots.length)) return null;
+            for (let slot = 0; slot < complementPositions.length; slot++) {
+                const entry = complementPositions[slot]!;
+                if (entry.position.candidates.length === 0) continue;
 
-            for (const [position, slot] of rightSlotByPosition) {
-                const complement = this.getSelectedIndexedCandidate(selection, position, copyMemo);
+                const complement = this.getSelectedCandidate(selection, entry.index, copyMemo);
                 FeatureStructure.unify(compSlots[slot]!, complement, this.types);
-                consumedComps.add(slot);
-                realizedNonHeads.push(complement.dereference());
+                occupiedComps.add(slot);
+                realizedByPosition.set(entry.index, complement.dereference());
             }
+
+            const internalSpr = this.findInternalMissingSlots(sprSlots.length, occupiedSpr);
+            const internalComps = this.findInternalMissingSlots(compSlots.length, occupiedComps);
+            const consumedSpr = new Set(occupiedSpr);
+            const consumedComps = new Set(occupiedComps);
 
             for (let index = 0; index < sprSlots.length; index++) {
                 if (consumedSpr.has(index)) continue;
-                if (policy.gapLeftEdge) {
+                const isDeclared = index < specifierPositions.length;
+                if (internalSpr.has(index) || isDeclared && policy.gapLeftEdge) {
                     gapItems.push(sprSlots[index]!.dereference());
                     consumedSpr.add(index);
-                    appliedSpecifier = true;
                 }
             }
 
             for (let index = 0; index < compSlots.length; index++) {
                 if (consumedComps.has(index)) continue;
-
-                const isInternalGap = [...actualCompSlots].some(actualIndex => actualIndex > index);
-                if (isInternalGap || policy.gapRightEdge) {
+                const isDeclared = index < complementPositions.length;
+                if (internalComps.has(index) || isDeclared && policy.gapRightEdge) {
                     gapItems.push(compSlots[index]!.dereference());
                     consumedComps.add(index);
                 }
             }
 
-            const remainingSpr = sprSlots.filter((_, index) => !consumedSpr.has(index)).map(slot => slot.dereference());
-            const remainingComps = compSlots.filter((_, index) => !consumedComps.has(index)).map(slot => slot.dereference());
-            const mother = this.buildIndexedMother(candidateHead, remainingSpr, remainingComps, gapItems, realizedNonHeads);
+            const remainingSpr = sprSlots
+                .filter((_, index) => !consumedSpr.has(index))
+                .map(slot => slot.dereference());
+            const remainingComps = compSlots
+                .filter((_, index) => !consumedComps.has(index))
+                .map(slot => slot.dereference());
 
-            if (appliedSpecifier) {
+            for (let index = 0; index < positions.length; index++) {
+                const position = positions[index]!;
+                if (position.role !== "modifier" || position.candidates.length === 0) continue;
+
+                const modifier = this.getSelectedCandidate(selection, index, copyMemo);
+                this.unifyModifierTarget(candidateHead, modifier);
+                realizedByPosition.set(index, modifier.dereference());
+            }
+
+            const realizedNonHeads = [...realizedByPosition.entries()]
+                .sort(([left], [right]) => left - right)
+                .map(([, nonHead]) => nonHead);
+            const mother = this.buildIndexedMother(
+                candidateHead,
+                remainingSpr,
+                remainingComps,
+                gapItems,
+                realizedNonHeads,
+            );
+
+            if (remainingSpr.length === 0) {
                 enforceBindingTheory(mother, this.types);
             }
 
@@ -280,32 +389,26 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         }
     }
 
-    private applyIndexedModifierPolicy(
-        selection: Map<number, FeatureStructure>,
-        candidateHead: FeatureStructure,
-        modifierPosition: number,
-        copyMemo: Map<FeatureStructure, FeatureStructure>,
-    ): FeatureStructure | null {
-        try {
-            const modifier = this.getSelectedIndexedCandidate(selection, modifierPosition, copyMemo);
-            const modifierSpr = modifier.getIn(["SYN", "VAL", "SPR"]);
-            const modifierComps = modifier.getIn(["SYN", "VAL", "COMPS"]);
-            const modifierMod = modifier.getIn(["SYN", "VAL", "MOD"]);
-            if (!modifierSpr || !modifierComps || !modifierMod) return null;
-            if (linearizeExpList(modifierSpr).length !== 0) return null;
-            if (linearizeExpList(modifierComps).length !== 0) return null;
-
-            const modifierTargets = linearizeExpList(modifierMod);
-            if (modifierTargets.length === 0) return null;
-
-            FeatureStructure.unify(modifierTargets[0]!, candidateHead, this.types);
-
-            const remainingSpr = this.linearizeHeadValence(candidateHead, "SPR");
-            const remainingComps = this.linearizeHeadValence(candidateHead, "COMPS");
-            return this.buildIndexedMother(candidateHead, remainingSpr, remainingComps, [], [modifier.dereference()]);
-        } catch {
-            return null;
+    private unifyModifierTarget(head: FeatureStructure, modifier: FeatureStructure): void {
+        const modifierSpr = modifier.getIn(["SYN", "VAL", "SPR"]);
+        const modifierComps = modifier.getIn(["SYN", "VAL", "COMPS"]);
+        const modifierMod = modifier.getIn(["SYN", "VAL", "MOD"]);
+        if (!modifierSpr || !modifierComps || !modifierMod) {
+            throw new Error(`Modifier is missing SPR, COMPS, or MOD.`);
         }
+        if (linearizeExpList(modifierSpr).length !== 0) {
+            throw new Error(`Modifier must have an empty SPR list.`);
+        }
+        if (linearizeExpList(modifierComps).length !== 0) {
+            throw new Error(`Modifier must have an empty COMPS list.`);
+        }
+
+        const modifierTargets = linearizeExpList(modifierMod);
+        if (modifierTargets.length === 0) {
+            throw new Error(`Modifier must declare a MOD target.`);
+        }
+
+        FeatureStructure.unify(modifierTargets[0]!, head, this.types);
     }
 
     private linearizeHeadValence(head: FeatureStructure, attribute: "SPR" | "COMPS"): FeatureStructure[] {
@@ -316,8 +419,8 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         return linearizeExpList(list).map(item => item.dereference());
     }
 
-    private getSelectedIndexedCandidate(
-        selection: Map<number, FeatureStructure>,
+    private getSelectedCandidate(
+        selection: IndexedSelection,
         position: number,
         copyMemo: Map<FeatureStructure, FeatureStructure>
     ): FeatureStructure {

@@ -90,6 +90,7 @@ export const lexemeData: LexemeInput[] = [
         type: "det-lxm",
         form: "a",
         count: "+",
+        num: "sg",
     },
     {
         type: "det-lxm",
