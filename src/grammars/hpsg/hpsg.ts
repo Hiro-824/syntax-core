@@ -1,3 +1,4 @@
+import { BinaryRules } from "../../core/parser.js";
 import { FeatureStructure } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { buildCompleteLexeme } from "./lexicon/lexeme-builder.js";
@@ -19,8 +20,10 @@ import {
     applyPresentParticipleLexicalRule,
     applyThirdSingularVerbLexicalRule,
 } from "./lexicon/lexical-rules/verbs.js";
-import { HPSGBinaryRules } from "./syntax/binary-rules.js";
+import { HPSGIndexedRules, IndexedHpsgInput } from "./syntax/indexed-rules.js";
 import { typeDefinition } from "./type-system/definition.js";
+
+export type { IndexedHpsgInput } from "./syntax/indexed-rules.js";
 
 export type VerbLexemeInput = Extract<
     LexemeInput,
@@ -56,12 +59,14 @@ export type ConstantWords = {
 
 export class HPSG {
     readonly types: TypeSystem;
-    readonly binaryRules: HPSGBinaryRules;
+    readonly binaryRules: BinaryRules<FeatureStructure>;
+    readonly indexedRules: HPSGIndexedRules;
 
     constructor() {
         this.types = new TypeSystem();
         this.types.loadDefinition(typeDefinition);
-        this.binaryRules = new HPSGBinaryRules(this.types);
+        this.indexedRules = new HPSGIndexedRules(this.types);
+        this.binaryRules = this.indexedRules.binaryRules;
     }
 
     buildLexeme(input: LexemeInput): FeatureStructure {
@@ -69,28 +74,36 @@ export class HPSG {
     }
 
     combine(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combine(left, right);
+        return this.combineAdjacent(left, right);
+    }
+
+    combineAdjacent(left: FeatureStructure, right: FeatureStructure): { category: FeatureStructure; rule: string }[] {
+        return this.indexedRules.combineAdjacent(left, right);
     }
 
     combineHeadComplement(
         head: FeatureStructure,
         complement: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combineHeadComplement(head, complement);
+        return this.indexedRules.combineHeadComplement(head, complement);
     }
 
     combineHeadSpecifier(
         head: FeatureStructure,
         specifier: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combineHeadSpecifier(head, specifier);
+        return this.indexedRules.combineHeadSpecifier(head, specifier);
     }
 
     combineHeadModifier(
         head: FeatureStructure,
         modifier: FeatureStructure
     ): { category: FeatureStructure; rule: string }[] {
-        return this.binaryRules.combineHeadModifier(head, modifier);
+        return this.indexedRules.combineHeadModifier(head, modifier);
+    }
+
+    combineIndexed(input: IndexedHpsgInput): FeatureStructure[] {
+        return this.indexedRules.combineIndexed(input);
     }
 
     applySingularNounRule(lexeme: FeatureStructure): FeatureStructure {
@@ -162,4 +175,5 @@ export class HPSG {
             word: this.applyConstantRule(lexeme),
         };
     }
+
 }

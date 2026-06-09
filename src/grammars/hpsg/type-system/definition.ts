@@ -51,7 +51,7 @@ export const typeDefinition = {
     "advform": { parent: "form" },
     "dform": { parent: "form" },
 
-    "syn-cat": { parent: "top", features: { "HEAD": "pos", "VAL": "val-cat" } },
+    "syn-cat": { parent: "top", features: { "HEAD": "pos", "VAL": "val-cat", "GAP": "exp-list", "STOP-GAP": "exp-list" } },
     "val-cat": { parent: "top", features: { "SPR": "exp-list", "COMPS": "exp-list", "MOD": "exp-list" } },
     "sem-cat": { parent: "top", features: { "MODE": "mode", "INDEX": "index", "RESTR": "pred-list" } },
 
@@ -115,6 +115,4 @@ export const typeDefinition = {
 
     "reln": { parent: "top" },
     "girl": { parent: "reln" },
-
-    "rule-schema": { parent: "top", features: { "MOTHER": "expression", "HEAD-DTR": "expression", "NON-HEAD-DTR": "expression" } },
 };

@@ -40,14 +40,14 @@ function runHpsgParseTests(): void {
     const terminalRules = createExampleHpsgTerminalRules(grammar);
 
     const cases: ParseExpectation[] = [
-        { sentence: "john sees mary", parses: 1, topRule: "head-specifier" },
+        { sentence: "john sees mary", parses: 2 },
         { sentence: "john see mary", parses: 0 },
         { sentence: "girls sees mary", parses: 0 },
         { sentence: "a girl see mary", parses: 0 },
-        { sentence: "i see myself", parses: 1, topRule: "head-specifier" },
+        { sentence: "i see myself", parses: 2 },
         { sentence: "me see myself", parses: 0 },
-        { sentence: "see mary", parses: 1, topRule: "head-complement" },
-        { sentence: "the telescope", parses: 1, topRule: "head-specifier" },
+        { sentence: "see mary", parses: 2 },
+        { sentence: "the telescope", parses: 1, topRule: "indexed-right-head" },
         { sentence: "a water", parses: 0 },
     ];
 
@@ -78,6 +78,9 @@ runConstantLexemeConstraintTests();
 runConstantLexemeLexicalRuleTests();
 runPronounRestrInputTests();
 runAgrNormalizationTests();
+runSynCatGapFeatureTests();
+runIndexedHpsgCombineTests();
+runGapPrincipleTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -163,6 +166,52 @@ function runLexemeGeneratorTests(): void {
     assert(rejectedMassPlural, `water: expected Plural Noun Lexical Rule to reject massn-lxm.`);
 }
 
+function runSynCatGapFeatureTests(): void {
+    const grammar = new HPSG();
+
+    assert(
+        grammar.types.getAppropriateType("syn-cat", "GAP") === "exp-list",
+        `syn-cat: expected GAP appropriate type to be exp-list.`
+    );
+    assert(
+        grammar.types.getAppropriateType("syn-cat", "STOP-GAP") === "exp-list",
+        `syn-cat: expected STOP-GAP appropriate type to be exp-list.`
+    );
+
+    const synCat = FeatureStructure.fromJSON({
+        type: "syn-cat",
+        HEAD: "noun",
+        VAL: {
+            type: "val-cat",
+            SPR: "exp-list-empty",
+            COMPS: "exp-list-empty",
+            MOD: "exp-list-empty",
+        },
+        GAP: "exp-list-empty",
+        "STOP-GAP": {
+            type: "exp-list-cons",
+            FIRST: {
+                type: "expression",
+            },
+            REST: "exp-list-empty",
+        },
+    }, grammar.types);
+
+    assert(synCat.get("GAP")?.getType() === "exp-list-empty", `syn-cat: expected GAP list.`);
+    assert(synCat.get("STOP-GAP")?.getType() === "exp-list-cons", `syn-cat: expected STOP-GAP list.`);
+
+    let rejectedNonListGap = false;
+    try {
+        FeatureStructure.fromJSON({
+            type: "syn-cat",
+            GAP: "noun",
+        }, grammar.types);
+    } catch {
+        rejectedNonListGap = true;
+    }
+    assert(rejectedNonListGap, `syn-cat: expected GAP to reject non exp-list values.`);
+}
+
 function runDirectHpsgCombineTests(): void {
     const grammar = new HPSG();
     const terminalRules = createExampleHpsgTerminalRules(grammar, [
@@ -176,8 +225,11 @@ function runDirectHpsgCombineTests(): void {
     const quickly = getSingleTerminal(terminalRules, "quickly");
 
     const seesMaryResults = grammar.combineHeadComplement(sees, mary);
-    assert(seesMaryResults.length === 1, `sees mary: expected one direct head-complement result.`);
-    assert(seesMaryResults[0].rule === "head-complement", `sees mary: expected head-complement.`);
+    assert(seesMaryResults.length === 2, `sees mary: expected indexed head-complement keep/gap variants.`);
+    assert(
+        seesMaryResults.every(result => result.rule === "indexed-head-complement"),
+        `sees mary: expected indexed head-complement.`
+    );
 
     const reversedComplementResults = grammar.combineHeadComplement(mary, sees);
     assert(reversedComplementResults.length === 0, `mary sees: expected no direct head-complement result.`);
@@ -185,11 +237,219 @@ function runDirectHpsgCombineTests(): void {
     const seesMary = seesMaryResults[0].category;
     const johnSeesMaryResults = grammar.combineHeadSpecifier(seesMary, john);
     assert(johnSeesMaryResults.length === 1, `john sees mary: expected one direct head-specifier result.`);
-    assert(johnSeesMaryResults[0].rule === "head-specifier", `john sees mary: expected head-specifier.`);
+    assert(johnSeesMaryResults[0].rule === "indexed-head-specifier", `john sees mary: expected indexed head-specifier.`);
 
     const modifiedResults = grammar.combineHeadModifier(seesMary, quickly);
     assert(modifiedResults.length === 1, `sees mary quickly: expected one direct head-modifier result.`);
-    assert(modifiedResults[0].rule === "head-modifier", `sees mary quickly: expected head-modifier.`);
+    assert(modifiedResults[0].rule === "indexed-head-modifier", `sees mary quickly: expected indexed head-modifier.`);
+
+    const indexedModifiedResults = grammar.combineAdjacent(seesMary, quickly);
+    assert(indexedModifiedResults.length === 1, `sees mary quickly: expected one indexed modifier result.`);
+    assert(
+        indexedModifiedResults[0].rule === "indexed-left-head",
+        `sees mary quickly: expected indexed left-head modifier result.`
+    );
+    assert(
+        indexedModifiedResults[0].category.getIn(["SYN", "VAL", "COMPS"])?.getType() === "exp-list-empty",
+        `sees mary quickly: expected indexed modifier result to preserve empty COMPS.`
+    );
+    assert(
+        indexedModifiedResults[0].category.getIn(["SYN", "VAL", "SPR"])?.getType() === "exp-list-cons",
+        `sees mary quickly: expected indexed modifier result to preserve pending SPR.`
+    );
+}
+
+function runIndexedHpsgCombineTests(): void {
+    const grammar = new HPSG();
+    const terminalRules = createExampleHpsgTerminalRules(grammar);
+
+    const i = getSingleTerminal(terminalRules, "i");
+    const sendInput = lexemeData.find(input => input.type === "dtv-lxm" && input.base === "send");
+    if (!sendInput || sendInput.type !== "dtv-lxm") throw new Error(`expected ditransitive send lexeme data.`);
+    const send = grammar.buildVerbWords(sendInput).nonThirdSingular;
+    const the = getSingleTerminal(terminalRules, "the");
+    const telescope = getSingleTerminal(terminalRules, "telescope");
+    const theTelescopeResults = grammar.combineHeadSpecifier(telescope, the);
+    assert(theTelescopeResults.length === 1, `the telescope: expected one NP result.`);
+    const theTelescope = theTelescopeResults[0].category;
+
+    const internalGapResults = grammar.combineIndexed({
+        words: {
+            1: i,
+            2: send,
+            4: theTelescope,
+        },
+        head: 2,
+    });
+
+    assert(internalGapResults.length === 1, `i send ___ the telescope: expected one indexed result.`);
+    const internalGap = internalGapResults[0];
+    assert(internalGap.getType() === "phrase", `indexed result: expected phrase.`);
+    assert(internalGap.getIn(["SYN", "VAL", "SPR"])?.getType() === "exp-list-empty", `indexed result: expected SPR consumed.`);
+    assert(internalGap.getIn(["SYN", "VAL", "COMPS"])?.getType() === "exp-list-empty", `indexed result: expected COMPS consumed.`);
+    assert(expListLength(internalGap.getIn(["SYN", "GAP"])) === 1, `indexed result: expected one internal GAP.`);
+    assert(
+        internalGap.getIn(["SYN", "HEAD", "AGR"])?.getType() === "1sing",
+        `indexed result: expected subject AGR unification to update head AGR.`
+    );
+    assert(
+        sameFeatureStructure(
+            internalGap.getIn(["SYN", "GAP", "FIRST"]),
+            internalGap.getIn(["ARG-ST", "REST", "FIRST"])
+        ),
+        `indexed result: expected GAP object and ARG-ST object to be shared.`
+    );
+    assert(
+        sameFeatureStructure(
+            internalGap.getIn(["SYN", "GAP", "FIRST", "SEM", "INDEX"]),
+            internalGap.getIn(["SEM", "RESTR", "FIRST", "ARG2"])
+        ),
+        `indexed result: expected GAP object index and verbal ARG2 to be shared.`
+    );
+
+    const edgeResults = grammar.combineIndexed({
+        words: {
+            2: send,
+        },
+        head: 2,
+    });
+
+    assert(edgeResults.length === 4, `send: expected four edge GAP/keep variants.`);
+    const signatures = new Set(edgeResults.map(result =>
+        [
+            expListLength(result.getIn(["SYN", "VAL", "SPR"])),
+            expListLength(result.getIn(["SYN", "VAL", "COMPS"])),
+            expListLength(result.getIn(["SYN", "GAP"])),
+        ].join("/")
+    ));
+    assert(signatures.has("1/2/0"), `send: expected variant keeping SPR and COMPS.`);
+    assert(signatures.has("0/2/1"), `send: expected variant gapping SPR and keeping COMPS.`);
+    assert(signatures.has("1/0/2"), `send: expected variant keeping SPR and gapping COMPS.`);
+    assert(signatures.has("0/0/3"), `send: expected variant gapping SPR and COMPS.`);
+
+    const indexedAdjacentResults = grammar.combineAdjacent(send, theTelescope);
+    const binaryAdapterResults = grammar.binaryRules.combine(send, theTelescope);
+    assert(
+        indexedAdjacentResults.length === binaryAdapterResults.length,
+        `indexed binary adapter: expected combineAdjacent and binaryRules to return the same number of results.`
+    );
+    assert(
+        indexedAdjacentResults.length === 4,
+        `indexed binary adapter: expected send + NP to produce left-edge/right-edge keep/gap variants.`
+    );
+    assert(
+        binaryAdapterResults.every(result => result.rule === "indexed-left-head"),
+        `indexed binary adapter: expected send + NP results to come from the left-head indexed pattern.`
+    );
+}
+
+function runGapPrincipleTests(): void {
+    const grammar = new HPSG();
+    const terminalRules = createExampleHpsgTerminalRules(grammar, [
+        ...lexemeData,
+        { type: "adv-lxm", form: "quickly" },
+    ]);
+
+    const mary = getSingleTerminal(terminalRules, "mary");
+    const sees = getSingleTerminal(terminalRules, "sees");
+    const quickly = getSingleTerminal(terminalRules, "quickly");
+    const seesMaryResults = grammar.combineHeadComplement(sees, mary);
+    const headWithGap = seesMaryResults.find(result =>
+        expListLength(result.category.getIn(["SYN", "GAP"])) === 1
+    )?.category;
+    if (!headWithGap) throw new Error(`expected sees mary variant with one subject GAP.`);
+
+    const modifierWithGap = quickly.deepCopy(new Map(), grammar.types);
+    const modifierGapItem = buildTestExpression("verb", grammar);
+    modifierWithGap.get("SYN")?.add(
+        "GAP",
+        buildTestExpList([modifierGapItem], grammar),
+        grammar.types
+    );
+
+    const summedResults = grammar.combineHeadModifier(headWithGap, modifierWithGap);
+    assert(summedResults.length === 1, `GAP principle: expected modifier combination to succeed.`);
+    assert(
+        expListLength(summedResults[0].category.getIn(["SYN", "GAP"])) === 2,
+        `GAP principle: expected mother GAP to be the sum of both child GAP lists.`
+    );
+    assert(
+        summedResults[0].category.getIn(["SYN", "STOP-GAP"]) === undefined,
+        `GAP principle: expected STOP-GAP not to be inherited.`
+    );
+
+    const stoppingHead = headWithGap.deepCopy(new Map(), grammar.types);
+    stoppingHead.get("SYN")?.add(
+        "STOP-GAP",
+        buildTestExpList([
+            buildTestExpression("verb", grammar),
+            buildTestExpression("det", grammar),
+        ], grammar),
+        grammar.types
+    );
+
+    const stoppedResults = grammar.combineHeadModifier(stoppingHead, modifierWithGap);
+    assert(stoppedResults.length === 1, `GAP principle: expected matching STOP-GAP to succeed.`);
+    const stopped = stoppedResults[0].category;
+    assert(
+        expListLength(stopped.getIn(["SYN", "GAP"])) === 1,
+        `GAP principle: expected STOP-GAP to remove one matching GAP.`
+    );
+    assert(
+        stopped.getIn(["SYN", "GAP", "FIRST", "SYN", "HEAD"])?.getType() === "noun",
+        `GAP principle: expected the first unifiable verb GAP to be removed, leaving the noun GAP.`
+    );
+    assert(
+        stopped.getIn(["SYN", "STOP-GAP"]) === undefined,
+        `GAP principle: expected neither consumed nor remaining STOP-GAP elements to be inherited.`
+    );
+
+    const failingHead = headWithGap.deepCopy(new Map(), grammar.types);
+    failingHead.get("SYN")?.add(
+        "STOP-GAP",
+        buildTestExpList([buildTestExpression("adj", grammar)], grammar),
+        grammar.types
+    );
+    assert(
+        grammar.combineHeadModifier(failingHead, quickly).length === 0,
+        `GAP principle: expected parsing to fail when STOP-GAP matches no child GAP.`
+    );
+}
+
+function buildTestExpression(headType: "noun" | "verb" | "adj" | "det", grammar: HPSG): FeatureStructure {
+    return FeatureStructure.fromJSON({
+        type: "expression",
+        SYN: {
+            type: "syn-cat",
+            HEAD: headType,
+        },
+    }, grammar.types);
+}
+
+function buildTestExpList(values: FeatureStructure[], grammar: HPSG): FeatureStructure {
+    if (values.length === 0) return new FeatureStructure("exp-list-empty");
+
+    const [first, ...rest] = values;
+    const list = new FeatureStructure("exp-list-cons");
+    list.add("FIRST", first!, grammar.types);
+    list.add("REST", buildTestExpList(rest, grammar), grammar.types);
+    return list;
+}
+
+function expListLength(list: FeatureStructure | undefined): number {
+    if (!list) throw new Error(`expected exp-list to be present.`);
+    let length = 0;
+    let current = list.dereference();
+
+    while (current.getType() === "exp-list-cons") {
+        const rest = current.get("REST");
+        if (!rest) throw new Error(`malformed exp-list-cons: missing REST.`);
+        length++;
+        current = rest.dereference();
+    }
+
+    assert(current.getType() === "exp-list-empty", `expected exp-list-empty, got ${current.getType()}.`);
+    return length;
 }
 
 function getSingleTerminal(

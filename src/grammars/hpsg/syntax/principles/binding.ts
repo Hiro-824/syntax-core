@@ -1,29 +1,7 @@
 import { FeatureStructure } from "../../../../features/features.js";
 import { TypeSystem } from "../../../../features/types.js";
-
-function linearizeList(list: FeatureStructure, types: TypeSystem): FeatureStructure[] {
-    const linear: FeatureStructure[] = [];
-    if (!types.isSubtype(list.getType(), "exp-list")) {
-        throw new Error(`Cannot linearize non exp-list: ${list.getType()}`);
-    }
-
-    let node = list.dereference();
-    while (node.getType() === "exp-list-cons") {
-        const first = node.get("FIRST");
-        const rest = node.get("REST");
-        if (!first || !rest) {
-            throw new Error("Malformed exp-list-cons: missing FIRST and/or REST");
-        }
-        linear.push(first);
-        node = rest.dereference();
-    }
-
-    if (node.getType() !== "exp-list-empty") {
-        throw new Error(`Malformed exp-list: expected exp-list-empty, got ${node.getType()}`);
-    }
-
-    return linear;
-}
+import { canUnify } from "../../../../features/unification.js";
+import { linearizeExpList } from "../../lexicon/valence.js";
 
 export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem): void {
     const argSt = mother.get("ARG-ST");
@@ -31,7 +9,7 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
         throw new Error("Mother is missing ARG-ST.");
     }
 
-    const args = linearizeList(argSt, types);
+    const args = linearizeExpList(argSt);
 
     const getOrCreateIndex = (expr: FeatureStructure): FeatureStructure => {
         const sem = expr.get("SEM");
@@ -44,17 +22,6 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
         const created = new FeatureStructure("index");
         sem.add("INDEX", created, types);
         return created;
-    };
-
-    const canUnify = (a: FeatureStructure, b: FeatureStructure): boolean => {
-        const aCopy = a.deepCopy(new Map(), types);
-        const bCopy = b.deepCopy(new Map(), types);
-        try {
-            FeatureStructure.unify(aCopy, bCopy, types);
-            return true;
-        } catch {
-            return false;
-        }
     };
 
     for (let i = 0; i < args.length; i++) {
@@ -80,7 +47,7 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
             const ant = args[j];
             const antAgr = ant.getIn(["SYN", "HEAD", "AGR"]);
             if (!antAgr) continue;
-            if (!canUnify(anaAgr, antAgr)) continue;
+            if (!canUnify(anaAgr, antAgr, types)) continue;
 
             const antIndex = getOrCreateIndex(ant);
             antecedent = ant;
