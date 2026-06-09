@@ -70,6 +70,9 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
         if (input.count) {
             head["COUNT"] = input.count;
         }
+        if (input.num) {
+            head["AGR"] = buildAgrInput({ num: input.num }, `determiner ${input.form} AGR`);
+        }
 
         return {
             "type": input.type,

@@ -308,7 +308,6 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
             const occupiedComps = new Set<number>();
             const gapItems: FeatureStructure[] = [];
             const realizedByPosition = new Map<number, FeatureStructure>();
-            let appliedSpecifier = false;
 
             for (let slot = 0; slot < specifierPositions.length; slot++) {
                 const entry = specifierPositions[slot]!;
@@ -318,7 +317,6 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
                 FeatureStructure.unify(sprSlots[slot]!, specifier, this.types);
                 occupiedSpr.add(slot);
                 realizedByPosition.set(entry.index, specifier.dereference());
-                appliedSpecifier = true;
             }
 
             for (let slot = 0; slot < complementPositions.length; slot++) {
@@ -342,7 +340,6 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
                 if (internalSpr.has(index) || isDeclared && policy.gapLeftEdge) {
                     gapItems.push(sprSlots[index]!.dereference());
                     consumedSpr.add(index);
-                    appliedSpecifier = true;
                 }
             }
 
@@ -382,7 +379,7 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
                 realizedNonHeads,
             );
 
-            if (appliedSpecifier) {
+            if (remainingSpr.length === 0) {
                 enforceBindingTheory(mother, this.types);
             }
 

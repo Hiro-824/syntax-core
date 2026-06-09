@@ -82,6 +82,7 @@ export type AdverbLexemeInput = ConstantLexemeInputBase & {
 export type DeterminerLexemeInput = ConstantLexemeInputBase & {
     type: "det-lxm";
     count?: "+" | "-";
+    num?: "sg" | "pl";
 };
 
 export type ArgumentMarkingPrepositionLexemeInput = ConstantLexemeInputBase & {
