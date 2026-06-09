@@ -1,5 +1,12 @@
 import { FeatureStructure } from "../../../../features/features.js";
 import { TypeSystem } from "../../../../features/types.js";
+import { concatList } from "../../type-system/lists.js";
+
+const predListTypes = {
+    list: "pred-list",
+    empty: "pred-list-empty",
+    cons: "pred-list-cons",
+};
 
 export function getRestr(expr: FeatureStructure): FeatureStructure {
     const restr = expr.getIn(["SEM", "RESTR"]);
@@ -7,27 +14,7 @@ export function getRestr(expr: FeatureStructure): FeatureStructure {
 }
 
 export function concatPredList(prefix: FeatureStructure, suffix: FeatureStructure, types: TypeSystem): FeatureStructure {
-    const p = prefix.dereference();
-    const s = suffix.dereference();
-
-    const t = p.getType();
-    if (t === "pred-list-empty") return s;
-    if (t !== "pred-list-cons") {
-        throw new Error(`Unsupported pred-list type for concatenation: ${t}`);
-    }
-
-    const first = p.get("FIRST");
-    if (!first) {
-        throw new Error(`Malformed pred-list-cons: missing FIRST`);
-    }
-
-    const rest = p.get("REST");
-    const newRest = rest ? concatPredList(rest, s, types) : s;
-
-    const out = new FeatureStructure("pred-list-cons");
-    out.add("FIRST", first, types);
-    out.add("REST", newRest, types);
-    return out;
+    return concatList(prefix, suffix, predListTypes, types);
 }
 
 export function setMotherRestrAsSum(

@@ -80,6 +80,7 @@ runPronounRestrInputTests();
 runAgrNormalizationTests();
 runSynCatGapFeatureTests();
 runIndexedHpsgCombineTests();
+runGapPrincipleTests();
 console.log("HPSG tests passed.");
 
 function runLexemeGeneratorTests(): void {
@@ -340,6 +341,99 @@ function runIndexedHpsgCombineTests(): void {
         binaryAdapterResults.every(result => result.rule === "indexed-left-head"),
         `indexed binary adapter: expected send + NP results to come from the left-head indexed pattern.`
     );
+}
+
+function runGapPrincipleTests(): void {
+    const grammar = new HPSG();
+    const terminalRules = createExampleHpsgTerminalRules(grammar, [
+        ...lexemeData,
+        { type: "adv-lxm", form: "quickly" },
+    ]);
+
+    const mary = getSingleTerminal(terminalRules, "mary");
+    const sees = getSingleTerminal(terminalRules, "sees");
+    const quickly = getSingleTerminal(terminalRules, "quickly");
+    const seesMaryResults = grammar.combineHeadComplement(sees, mary);
+    const headWithGap = seesMaryResults.find(result =>
+        expListLength(result.category.getIn(["SYN", "GAP"])) === 1
+    )?.category;
+    if (!headWithGap) throw new Error(`expected sees mary variant with one subject GAP.`);
+
+    const modifierWithGap = quickly.deepCopy(new Map(), grammar.types);
+    const modifierGapItem = buildTestExpression("verb", grammar);
+    modifierWithGap.get("SYN")?.add(
+        "GAP",
+        buildTestExpList([modifierGapItem], grammar),
+        grammar.types
+    );
+
+    const summedResults = grammar.combineHeadModifier(headWithGap, modifierWithGap);
+    assert(summedResults.length === 1, `GAP principle: expected modifier combination to succeed.`);
+    assert(
+        expListLength(summedResults[0].category.getIn(["SYN", "GAP"])) === 2,
+        `GAP principle: expected mother GAP to be the sum of both child GAP lists.`
+    );
+    assert(
+        summedResults[0].category.getIn(["SYN", "STOP-GAP"]) === undefined,
+        `GAP principle: expected STOP-GAP not to be inherited.`
+    );
+
+    const stoppingHead = headWithGap.deepCopy(new Map(), grammar.types);
+    stoppingHead.get("SYN")?.add(
+        "STOP-GAP",
+        buildTestExpList([
+            buildTestExpression("verb", grammar),
+            buildTestExpression("det", grammar),
+        ], grammar),
+        grammar.types
+    );
+
+    const stoppedResults = grammar.combineHeadModifier(stoppingHead, modifierWithGap);
+    assert(stoppedResults.length === 1, `GAP principle: expected matching STOP-GAP to succeed.`);
+    const stopped = stoppedResults[0].category;
+    assert(
+        expListLength(stopped.getIn(["SYN", "GAP"])) === 1,
+        `GAP principle: expected STOP-GAP to remove one matching GAP.`
+    );
+    assert(
+        stopped.getIn(["SYN", "GAP", "FIRST", "SYN", "HEAD"])?.getType() === "noun",
+        `GAP principle: expected the first unifiable verb GAP to be removed, leaving the noun GAP.`
+    );
+    assert(
+        stopped.getIn(["SYN", "STOP-GAP"]) === undefined,
+        `GAP principle: expected neither consumed nor remaining STOP-GAP elements to be inherited.`
+    );
+
+    const failingHead = headWithGap.deepCopy(new Map(), grammar.types);
+    failingHead.get("SYN")?.add(
+        "STOP-GAP",
+        buildTestExpList([buildTestExpression("adj", grammar)], grammar),
+        grammar.types
+    );
+    assert(
+        grammar.combineHeadModifier(failingHead, quickly).length === 0,
+        `GAP principle: expected parsing to fail when STOP-GAP matches no child GAP.`
+    );
+}
+
+function buildTestExpression(headType: "noun" | "verb" | "adj" | "det", grammar: HPSG): FeatureStructure {
+    return FeatureStructure.fromJSON({
+        type: "expression",
+        SYN: {
+            type: "syn-cat",
+            HEAD: headType,
+        },
+    }, grammar.types);
+}
+
+function buildTestExpList(values: FeatureStructure[], grammar: HPSG): FeatureStructure {
+    if (values.length === 0) return new FeatureStructure("exp-list-empty");
+
+    const [first, ...rest] = values;
+    const list = new FeatureStructure("exp-list-cons");
+    list.add("FIRST", first!, grammar.types);
+    list.add("REST", buildTestExpList(rest, grammar), grammar.types);
+    return list;
 }
 
 function expListLength(list: FeatureStructure | undefined): number {

@@ -1,8 +1,9 @@
 import { BinaryRules } from "../../../core/parser.js";
 import { FeatureStructure } from "../../../features/features.js";
 import { TypeSystem } from "../../../features/types.js";
-import { buildExpList, concatExpList, linearizeExpList } from "../lexicon/valence.js";
+import { buildExpList, linearizeExpList } from "../lexicon/valence.js";
 import { enforceBindingTheory } from "./principles/binding.js";
+import { setMotherGapAsSum } from "./principles/gap.js";
 import { concatPredList, getRestr } from "./principles/semantics.js";
 
 export type IndexedHpsgInput = {
@@ -331,17 +332,15 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         head: FeatureStructure,
         remainingSpr: FeatureStructure[],
         remainingComps: FeatureStructure[],
-        gapItems: FeatureStructure[],
+        introducedGaps: FeatureStructure[],
         realizedNonHeads: FeatureStructure[],
     ): FeatureStructure {
-        const headSyn = head.get("SYN");
         const headSem = head.get("SEM");
         const headArgSt = head.get("ARG-ST");
         const headHead = head.getIn(["SYN", "HEAD"]);
-        const headVal = head.getIn(["SYN", "VAL"]);
         const headMod = head.getIn(["SYN", "VAL", "MOD"]);
-        if (!headSyn || !headSem || !headArgSt || !headHead || !headVal || !headMod) {
-            throw new Error("Cannot build indexed mother: head is missing SYN, SEM, ARG-ST, HEAD, VAL, or MOD.");
+        if (!headSem || !headArgSt || !headHead || !headMod) {
+            throw new Error("Cannot build indexed mother: head is missing SEM, ARG-ST, HEAD, or MOD.");
         }
 
         const mother = new FeatureStructure("phrase");
@@ -355,8 +354,6 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
 
         syn.add("HEAD", headHead, this.types);
         syn.add("VAL", val, this.types);
-        syn.add("GAP", this.buildUpdatedGap(headSyn, gapItems), this.types);
-        syn.add("STOP-GAP", headSyn.get("STOP-GAP") ?? new FeatureStructure("exp-list-empty"), this.types);
 
         const mode = headSem.get("MODE");
         const index = headSem.get("INDEX");
@@ -367,13 +364,8 @@ export class HPSGIndexedRules implements BinaryRules<FeatureStructure> {
         mother.add("ARG-ST", headArgSt, this.types);
         mother.add("SYN", syn, this.types);
         mother.add("SEM", sem, this.types);
+        setMotherGapAsSum(mother, head, realizedNonHeads, introducedGaps, this.types);
         return mother;
-    }
-
-    private buildUpdatedGap(headSyn: FeatureStructure, gapItems: FeatureStructure[]): FeatureStructure {
-        const existingGap = headSyn.get("GAP") ?? new FeatureStructure("exp-list-empty");
-        const newGap = buildExpList(gapItems, this.types);
-        return concatExpList(existingGap, newGap, this.types);
     }
 
     private buildIndexedRestr(head: FeatureStructure, realizedNonHeads: FeatureStructure[]): FeatureStructure {
