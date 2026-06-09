@@ -23,7 +23,11 @@ import {
 import { HPSGIndexedRules, IndexedHpsgInput } from "./syntax/indexed-rules.js";
 import { typeDefinition } from "./type-system/definition.js";
 
-export type { IndexedHpsgInput } from "./syntax/indexed-rules.js";
+export type {
+    IndexedHpsgInput,
+    IndexedHpsgPosition,
+    IndexedHpsgRole,
+} from "./syntax/indexed-rules.js";
 
 export type VerbLexemeInput = Extract<
     LexemeInput,

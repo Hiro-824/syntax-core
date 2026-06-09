@@ -261,7 +261,10 @@ function runDirectHpsgCombineTests(): void {
 
 function runIndexedHpsgCombineTests(): void {
     const grammar = new HPSG();
-    const terminalRules = createExampleHpsgTerminalRules(grammar);
+    const terminalRules = createExampleHpsgTerminalRules(grammar, [
+        ...lexemeData,
+        { type: "adv-lxm", form: "quickly" },
+    ]);
 
     const i = getSingleTerminal(terminalRules, "i");
     const sendInput = lexemeData.find(input => input.type === "dtv-lxm" && input.base === "send");
@@ -269,17 +272,18 @@ function runIndexedHpsgCombineTests(): void {
     const send = grammar.buildVerbWords(sendInput).nonThirdSingular;
     const the = getSingleTerminal(terminalRules, "the");
     const telescope = getSingleTerminal(terminalRules, "telescope");
+    const quickly = getSingleTerminal(terminalRules, "quickly");
     const theTelescopeResults = grammar.combineHeadSpecifier(telescope, the);
     assert(theTelescopeResults.length === 1, `the telescope: expected one NP result.`);
     const theTelescope = theTelescopeResults[0].category;
 
     const internalGapResults = grammar.combineIndexed({
-        words: {
-            1: i,
-            2: send,
-            4: theTelescope,
-        },
-        head: 2,
+        positions: [
+            { role: "specifier", value: i },
+            { role: "head", value: send },
+            { role: "complement" },
+            { role: "complement", value: theTelescope },
+        ],
     });
 
     assert(internalGapResults.length === 1, `i send ___ the telescope: expected one indexed result.`);
@@ -308,10 +312,12 @@ function runIndexedHpsgCombineTests(): void {
     );
 
     const edgeResults = grammar.combineIndexed({
-        words: {
-            2: send,
-        },
-        head: 2,
+        positions: [
+            { role: "specifier" },
+            { role: "head", value: send },
+            { role: "complement" },
+            { role: "complement" },
+        ],
     });
 
     assert(edgeResults.length === 4, `send: expected four edge GAP/keep variants.`);
@@ -340,6 +346,39 @@ function runIndexedHpsgCombineTests(): void {
     assert(
         binaryAdapterResults.every(result => result.rule === "indexed-left-head"),
         `indexed binary adapter: expected send + NP results to come from the left-head indexed pattern.`
+    );
+
+    const multiplyModifiedResults = grammar.combineIndexed({
+        positions: [
+            { role: "modifier", value: quickly },
+            { role: "specifier", value: i },
+            { role: "head", value: send },
+            { role: "complement" },
+            { role: "complement", value: theTelescope },
+            { role: "modifier", value: quickly.deepCopy(new Map(), grammar.types) },
+        ],
+    });
+    assert(
+        multiplyModifiedResults.length === 1,
+        `quickly i send ___ the telescope quickly: expected one role-based result.`
+    );
+    assert(
+        expListLength(multiplyModifiedResults[0].getIn(["SYN", "GAP"])) === 1,
+        `multiple modifiers: expected the skipped first complement to become an internal GAP.`
+    );
+
+    const nounModifierResults = grammar.combineIndexed({
+        positions: [
+            { role: "specifier", value: i },
+            { role: "head", value: send },
+            { role: "complement" },
+            { role: "complement", value: theTelescope },
+            { role: "modifier", value: theTelescope },
+        ],
+    });
+    assert(
+        nounModifierResults.length === 0,
+        `noun modifier role: expected a noun with empty MOD to be rejected.`
     );
 }
 
