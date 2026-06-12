@@ -15,6 +15,7 @@ import {
 import {
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
+    applyPassiveLexicalRule,
     applyPastParticipleLexicalRule,
     applyPastTenseVerbLexicalRule,
     applyPresentParticipleLexicalRule,
@@ -55,6 +56,7 @@ export type VerbWords = {
     presentParticiple: FeatureStructure;
     pastTense: FeatureStructure;
     pastParticiple: FeatureStructure;
+    passive?: FeatureStructure;
 };
 
 export type ConstantWords = {
@@ -142,6 +144,10 @@ export class HPSG {
         return applyPastParticipleLexicalRule(lexeme, this.types);
     }
 
+    applyPassiveVerbRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyPassiveLexicalRule(lexeme, this.types);
+    }
+
     applyConstantRule(lexeme: FeatureStructure): FeatureStructure {
         return applyConstantLexemeLexicalRule(lexeme, this.types);
     }
@@ -163,7 +169,7 @@ export class HPSG {
 
     buildVerbWords(input: VerbLexemeInput): VerbWords {
         const lexeme = this.buildLexeme(input);
-        return {
+        const words: VerbWords = {
             base: this.applyBaseVerbRule(lexeme),
             nonThirdSingular: this.applyNonThirdSingularVerbRule(lexeme),
             thirdSingular: this.applyThirdSingularVerbRule(lexeme),
@@ -171,6 +177,10 @@ export class HPSG {
             pastTense: this.applyPastTenseVerbRule(lexeme),
             pastParticiple: this.applyPastParticipleVerbRule(lexeme),
         };
+        if (this.types.isSubtype(lexeme.getType(), "tv-lxm")) {
+            words.passive = this.applyPassiveVerbRule(lexeme);
+        }
+        return words;
     }
 
     buildConstantWords(input: ConstantLexemeInput): ConstantWords {

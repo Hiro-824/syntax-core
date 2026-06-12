@@ -2,6 +2,7 @@ import { FeatureStructure, HPSG, parseFromString } from "./index.js";
 import {
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
+    applyPassiveLexicalRule,
     applyPastParticipleLexicalRule,
     applyPastTenseVerbLexicalRule,
     applyPresentParticipleLexicalRule,
@@ -832,6 +833,7 @@ function runVerbLexicalRuleTests(): void {
     const baseForm = applyBaseFormLexicalRule(see, grammar.types);
     const presentParticiple = applyPresentParticipleLexicalRule(see, grammar.types);
     const pastParticiple = applyPastParticipleLexicalRule(see, grammar.types);
+    const passive = applyPassiveLexicalRule(see, grammar.types);
 
     assert(thirdSingular.getType() === "word", `third singular see: expected word.`);
     assert(
@@ -923,6 +925,72 @@ function runVerbLexicalRuleTests(): void {
     assert(
         pastParticiple.getIn(["SYN", "VAL", "COMPS", "REST"])?.getType() === "exp-list-empty",
         `past participle see: expected COMPS to contain one element.`
+    );
+    assert(passive.getType() === "part-lxm", `passive see: expected part-lxm.`);
+    assert(
+        passive.getIn(["SYN", "HEAD", "FORM"])?.getType() === "pass",
+        `passive see: expected FORM pass.`
+    );
+    assert(
+        expListLength(passive.get("ARG-ST")) === 1,
+        `passive see: expected the first ARG-ST element to be removed.`
+    );
+    assert(
+        sameFeatureStructure(
+            passive.getIn(["ARG-ST", "FIRST"]),
+            passive.getIn(["SYN", "VAL", "SPR", "FIRST"])
+        ),
+        `passive see: expected reduced ARG-ST first element and SPR first element to be shared.`
+    );
+    assert(
+        passive.getIn(["SYN", "VAL", "COMPS"])?.getType() === "exp-list-empty",
+        `passive see: expected empty COMPS.`
+    );
+
+    let rejectedIntransitive = false;
+    try {
+        const walk = buildCompleteLexeme({
+            type: "siv-lxm",
+            base: "walk",
+            thirdSingular: "walks",
+            presentParticiple: "walking",
+            pastTense: "walked",
+            pastParticiple: "walked",
+            reln: "walk",
+        }, grammar.types);
+        applyPassiveLexicalRule(walk, grammar.types);
+    } catch {
+        rejectedIntransitive = true;
+    }
+    assert(rejectedIntransitive, `Passive Lexical Rule should reject non-tv-lxm inputs.`);
+
+    const generatedWords = grammar.buildVerbWords({
+        type: "stv-lxm",
+        base: "see",
+        thirdSingular: "sees",
+        presentParticiple: "seeing",
+        pastTense: "saw",
+        pastParticiple: "seen",
+        reln: "see",
+    });
+    assert(
+        generatedWords.passive?.getIn(["SYN", "HEAD", "FORM"])?.getType() === "pass",
+        `buildVerbWords: expected a passive form for tv-lxm.`
+    );
+
+    const terminalRules = createExampleHpsgTerminalRules(grammar, [{
+        type: "stv-lxm",
+        base: "see",
+        thirdSingular: "sees",
+        presentParticiple: "seeing",
+        pastTense: "saw",
+        pastParticiple: "seen",
+        reln: "see",
+    }]);
+    const seenCategories = terminalRules("seen");
+    assert(
+        seenCategories.some(category => category.getIn(["SYN", "HEAD", "FORM"])?.getType() === "pass"),
+        `seen: expected terminal rules to include a passive category.`
     );
     assert(
         sameFeatureStructure(

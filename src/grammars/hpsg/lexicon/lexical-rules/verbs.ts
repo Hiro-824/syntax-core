@@ -38,7 +38,18 @@ function assertVerbLexeme(lexeme: FeatureStructure, types: TypeSystem, ruleName:
     }
 }
 
-function setHeadForm(word: FeatureStructure, form: "base" | "fin" | "prp" | "psp", types: TypeSystem): void {
+function assertTransitiveVerbLexeme(lexeme: FeatureStructure, types: TypeSystem, ruleName: string): void {
+    const type = lexeme.getType();
+    if (!types.isSubtype(type, "tv-lxm")) {
+        throw new Error(`${ruleName} requires tv-lxm, got ${type}.`);
+    }
+}
+
+function setHeadForm(
+    word: FeatureStructure,
+    form: "base" | "fin" | "prp" | "psp" | "pass",
+    types: TypeSystem
+): void {
     const head = word.getIn(["SYN", "HEAD"]);
     if (!head) {
         throw new Error("Cannot apply verb lexical rule: word is missing SYN.HEAD.");
@@ -129,5 +140,45 @@ export function applyPastParticipleLexicalRule(
     const participle = buildParticipleLexemeFromVerb(lexeme, types);
     setValenceFromArgSt(participle, types, "Past Participle Lexical Rule");
     setHeadForm(participle, "psp", types);
+    return participle;
+}
+
+export function applyPassiveLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    const ruleName = "Passive Lexical Rule";
+    assertTransitiveVerbLexeme(lexeme, types, ruleName);
+
+    const sourceSyn = lexeme.get("SYN");
+    const sourceSem = lexeme.get("SEM");
+    const sourceArgSt = lexeme.get("ARG-ST");
+    const sourceHead = sourceSyn?.get("HEAD");
+    const sourceVal = sourceSyn?.get("VAL");
+    const reducedArgSt = sourceArgSt?.get("REST");
+    if (!sourceSyn || !sourceSem || !sourceArgSt || !sourceHead || !sourceVal || !reducedArgSt) {
+        throw new Error(`${ruleName} requires SYN, SEM, and a non-empty ARG-ST.`);
+    }
+
+    const copyMemo = new Map<FeatureStructure, FeatureStructure>();
+    const participle = new FeatureStructure("part-lxm");
+    const syn = new FeatureStructure("syn-cat");
+    const val = new FeatureStructure("val-cat");
+
+    syn.add("HEAD", sourceHead.deepCopy(copyMemo, types), types);
+    for (const attr of ["GAP", "STOP-GAP"]) {
+        const value = sourceSyn.get(attr);
+        if (value) syn.add(attr, value.deepCopy(copyMemo, types), types);
+    }
+    const sourceMod = sourceVal.get("MOD");
+    if (sourceMod) val.add("MOD", sourceMod.deepCopy(copyMemo, types), types);
+    syn.add("VAL", val, types);
+
+    participle.add("SYN", syn, types);
+    participle.add("SEM", sourceSem.deepCopy(copyMemo, types), types);
+    participle.add("ARG-ST", reducedArgSt.deepCopy(copyMemo, types), types);
+
+    setValenceFromArgSt(participle, types, ruleName);
+    setHeadForm(participle, "pass", types);
     return participle;
 }

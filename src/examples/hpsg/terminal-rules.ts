@@ -54,11 +54,15 @@ function buildExampleVerbTerminalEntries(
     input: VerbLexemeInput
 ): TerminalEntry<FeatureStructure>[] {
     const words = grammar.buildVerbWords(input);
-    return [
+    const entries: TerminalEntry<FeatureStructure>[] = [
         { terminal: input.base, category: words.nonThirdSingular },
         { terminal: input.thirdSingular, category: words.thirdSingular },
         { terminal: input.presentParticiple, category: words.presentParticiple },
         { terminal: input.pastTense, category: words.pastTense },
         { terminal: input.pastParticiple, category: words.pastParticiple },
     ];
+    if (words.passive) {
+        entries.push({ terminal: input.pastParticiple, category: words.passive });
+    }
+    return entries;
 }
