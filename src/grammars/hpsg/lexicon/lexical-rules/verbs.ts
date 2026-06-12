@@ -57,7 +57,19 @@ function setHeadForm(
     head.add("FORM", new FeatureStructure(form), types);
 }
 
-function setHeadAgr(word: FeatureStructure, agrType: "3sing" | "non-3sing", types: TypeSystem): void {
+function setHeadPred(word: FeatureStructure, pred: "+" | "-", types: TypeSystem): void {
+    const head = word.getIn(["SYN", "HEAD"]);
+    if (!head) {
+        throw new Error("Cannot apply verb lexical rule: word is missing SYN.HEAD.");
+    }
+    head.add("PRED", new FeatureStructure(pred), types);
+}
+
+function setHeadAgr(
+    word: FeatureStructure,
+    agrType: "agr-cat" | "1sing" | "3sing" | "non-1sing" | "non-3sing" | "plural",
+    types: TypeSystem
+): void {
     const head = word.getIn(["SYN", "HEAD"]);
     if (!head) {
         throw new Error("Cannot apply verb lexical rule: word is missing SYN.HEAD.");
@@ -86,6 +98,7 @@ export function applyThirdSingularVerbLexicalRule(
 ): FeatureStructure {
     const word = applyVerbRuleBase(lexeme, types, "3rd-Singular Verb Lexical Rule");
     setHeadForm(word, "fin", types);
+    setHeadPred(word, "-", types);
     setHeadAgr(word, "3sing", types);
     setSubjectCase(word, "nom", types);
     return word;
@@ -97,6 +110,7 @@ export function applyNonThirdSingularVerbLexicalRule(
 ): FeatureStructure {
     const word = applyVerbRuleBase(lexeme, types, "Non-3rd-Singular Verb Lexical Rule");
     setHeadForm(word, "fin", types);
+    setHeadPred(word, "-", types);
     setHeadAgr(word, "non-3sing", types);
     setSubjectCase(word, "nom", types);
     return word;
@@ -108,6 +122,7 @@ export function applyPastTenseVerbLexicalRule(
 ): FeatureStructure {
     const word = applyVerbRuleBase(lexeme, types, "Past-Tense Verb Lexical Rule");
     setHeadForm(word, "fin", types);
+    setHeadPred(word, "-", types);
     setSubjectCase(word, "nom", types);
     return word;
 }
@@ -118,6 +133,7 @@ export function applyBaseFormLexicalRule(
 ): FeatureStructure {
     const word = applyVerbRuleBase(lexeme, types, "Base Form Lexical Rule");
     setHeadForm(word, "base", types);
+    setHeadPred(word, "-", types);
     return word;
 }
 
@@ -129,6 +145,7 @@ export function applyPresentParticipleLexicalRule(
     const participle = buildParticipleLexemeFromVerb(lexeme, types);
     setValenceFromArgSt(participle, types, "Present Participle Lexical Rule");
     setHeadForm(participle, "prp", types);
+    setHeadPred(participle, "+", types);
     return participle;
 }
 
@@ -140,6 +157,7 @@ export function applyPastParticipleLexicalRule(
     const participle = buildParticipleLexemeFromVerb(lexeme, types);
     setValenceFromArgSt(participle, types, "Past Participle Lexical Rule");
     setHeadForm(participle, "psp", types);
+    setHeadPred(participle, "-", types);
     return participle;
 }
 
@@ -180,5 +198,89 @@ export function applyPassiveLexicalRule(
 
     setValenceFromArgSt(participle, types, ruleName);
     setHeadForm(participle, "pass", types);
+    setHeadPred(participle, "+", types);
+    return participle;
+}
+
+function assertBeLexeme(lexeme: FeatureStructure): void {
+    if (lexeme.getType() !== "be-lxm") {
+        throw new Error(`Be Lexical Rule requires be-lxm, got ${lexeme.getType()}.`);
+    }
+}
+
+function applyBeWordRule(
+    lexeme: FeatureStructure,
+    form: "base" | "fin",
+    agrType: "agr-cat" | "1sing" | "3sing" | "non-1sing" | "non-3sing" | "plural",
+    finite: boolean,
+    types: TypeSystem,
+    ruleName: string
+): FeatureStructure {
+    assertBeLexeme(lexeme);
+    const word = buildWordFromLexeme(lexeme, types);
+    setValenceFromArgSt(word, types, ruleName);
+    setHeadForm(word, form, types);
+    setHeadPred(word, "-", types);
+    setHeadAgr(word, agrType, types);
+    if (finite) setSubjectCase(word, "nom", types);
+    return word;
+}
+
+export function applyBeBaseLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    return applyBeWordRule(lexeme, "base", "agr-cat", false, types, "Be Base Lexical Rule");
+}
+
+export function applyBeFirstSingularLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    return applyBeWordRule(lexeme, "fin", "1sing", true, types, "Be First-Singular Lexical Rule");
+}
+
+export function applyBeThirdSingularLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    return applyBeWordRule(lexeme, "fin", "3sing", true, types, "Be Third-Singular Lexical Rule");
+}
+
+export function applyBeNonThirdSingularLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    return applyBeWordRule(lexeme, "fin", "non-1sing", true, types, "Be Non-First-Singular Lexical Rule");
+}
+
+export function applyBePastNonFirstSingularLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    return applyBeWordRule(lexeme, "fin", "non-1sing", true, types, "Be Past Non-First-Singular Lexical Rule");
+}
+
+export function applyBePresentParticipleLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    assertBeLexeme(lexeme);
+    const participle = buildParticipleLexemeFromVerb(lexeme, types);
+    setValenceFromArgSt(participle, types, "Be Present Participle Lexical Rule");
+    setHeadForm(participle, "prp", types);
+    setHeadPred(participle, "+", types);
+    return participle;
+}
+
+export function applyBePastParticipleLexicalRule(
+    lexeme: FeatureStructure,
+    types: TypeSystem
+): FeatureStructure {
+    assertBeLexeme(lexeme);
+    const participle = buildParticipleLexemeFromVerb(lexeme, types);
+    setValenceFromArgSt(participle, types, "Be Past Participle Lexical Rule");
+    setHeadForm(participle, "psp", types);
+    setHeadPred(participle, "-", types);
     return participle;
 }

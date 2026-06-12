@@ -20,6 +20,18 @@ type VerbLexemeInputBase = {
     reln: string;
 };
 
+export type BeLexemeInput = {
+    type: "be-lxm";
+    base: string;
+    firstSingular: string;
+    thirdSingular: string;
+    nonThirdSingular: string;
+    pastSingular: string;
+    pastPlural: string;
+    presentParticiple: string;
+    pastParticiple: string;
+};
+
 export type SimpleIntransitiveVerbLexemeInput = VerbLexemeInputBase & {
     type: "siv-lxm";
 };
@@ -54,7 +66,7 @@ export type ProperNounLexemeInput = ConstantLexemeInputBase & {
 export type PronounLexemeInput = ConstantLexemeInputBase & {
     type: "pron-lxm";
     case?: "nom" | "acc";
-    agr?: "1sing" | "2sing" | "3sing" | "plural" | "non-3sing" | "agr-cat";
+    agr?: "1sing" | "2sing" | "3sing" | "plural" | "non-1sing" | "non-3sing" | "agr-cat";
     per?: "1st" | "2nd" | "3rd";
     num?: "sg" | "pl";
     gend?: "fem" | "masc" | "neut";
@@ -73,6 +85,7 @@ export type PredicationInput = {
 export type AdjectiveLexemeInput = ConstantLexemeInputBase & {
     type: "adj-lxm";
     reln: string;
+    pred?: "+" | "-";
 };
 
 export type AdverbLexemeInput = ConstantLexemeInputBase & {
@@ -107,6 +120,7 @@ export type LexemeInput =
     | SimpleTransitiveVerbLexemeInput
     | DitransitiveVerbLexemeInput
     | PrepositionalTransitiveVerbLexemeInput
+    | BeLexemeInput
     | ProperNounLexemeInput
     | PronounLexemeInput
     | AdjectiveLexemeInput

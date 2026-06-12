@@ -2,6 +2,17 @@ import { LexemeInput } from "../../grammars/hpsg/lexicon/lexeme-input.js";
 
 export const lexemeData: LexemeInput[] = [
     {
+        type: "be-lxm",
+        base: "be",
+        firstSingular: "am",
+        thirdSingular: "is",
+        nonThirdSingular: "are",
+        pastSingular: "was",
+        pastPlural: "were",
+        presentParticiple: "being",
+        pastParticiple: "been",
+    },
+    {
         type: "pn-lxm",
         form: "john",
         reln: "named John",
@@ -112,6 +123,11 @@ export const lexemeData: LexemeInput[] = [
         type: "massn-lxm",
         form: "water",
         reln: "water",
+    },
+    {
+        type: "adj-lxm",
+        form: "happy",
+        reln: "happy",
     },
     {
         type: "siv-lxm",

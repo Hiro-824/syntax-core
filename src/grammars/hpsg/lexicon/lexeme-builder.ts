@@ -6,6 +6,12 @@ import { ensureLexemeInputRelns } from "../type-system/relns.js";
 import { buildAgrInput } from "./agr.js";
 
 function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureInput {
+    if (input.type === "be-lxm") {
+        return {
+            "type": input.type,
+        };
+    }
+
     if (input.type === "pron-lxm") {
         const definedIndexes = new Set<string>();
         const buildIndexValue = (name: string): FeatureStructureInput => {
@@ -158,6 +164,20 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
         };
     }
 
+    if (input.type === "adj-lxm") {
+        return {
+            "type": input.type,
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "adj",
+                    "PRED": input.pred ?? "+",
+                },
+            },
+            "SEM": buildRelnOnlySem(input.reln),
+        };
+    }
+
     if (!input.reln) {
         return {
             "type": input.type,
@@ -173,8 +193,7 @@ function buildIndividualLexemeConstraint(input: LexemeInput): FeatureStructureIn
     if (
         input.type === "siv-lxm" ||
         input.type === "stv-lxm" ||
-        input.type === "dtv-lxm" ||
-        input.type === "adj-lxm"
+        input.type === "dtv-lxm"
     ) {
         return {
             "type": input.type,

@@ -7,6 +7,7 @@ export type { Attribute, FeatureStructureAVM, FeatureStructureInput } from "./fe
 export { CFG, createCFGTerminalRules } from "./grammars/cfg/cfg.js";
 export { HPSG } from "./grammars/hpsg/hpsg.js";
 export type {
+    BeWords,
     ConstantLexemeInput,
     ConstantWords,
     CountNounWords,
@@ -17,4 +18,4 @@ export type {
     VerbLexemeInput,
     VerbWords,
 } from "./grammars/hpsg/hpsg.js";
-export type { LexemeInput, PredicationInput } from "./grammars/hpsg/lexicon/lexeme-input.js";
+export type { BeLexemeInput, LexemeInput, PredicationInput } from "./grammars/hpsg/lexicon/lexeme-input.js";

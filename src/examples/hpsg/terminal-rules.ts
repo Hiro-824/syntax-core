@@ -1,7 +1,7 @@
 import { createTerminalRules, TerminalEntry, TerminalRules } from "../../core/parser.js";
 import { FeatureStructure } from "../../features/features.js";
 import { HPSG, VerbLexemeInput } from "../../grammars/hpsg/hpsg.js";
-import { LexemeInput } from "../../grammars/hpsg/lexicon/lexeme-input.js";
+import { BeLexemeInput, LexemeInput } from "../../grammars/hpsg/lexicon/lexeme-input.js";
 import { lexemeData } from "./lexeme-data.js";
 
 export function createExampleHpsgTerminalRules(
@@ -35,6 +35,8 @@ function buildExampleTerminalEntries(
         case "dtv-lxm":
         case "ptv-lxm":
             return buildExampleVerbTerminalEntries(grammar, input);
+        case "be-lxm":
+            return buildExampleBeTerminalEntries(grammar, input);
         case "pn-lxm":
         case "pron-lxm":
         case "adj-lxm":
@@ -49,6 +51,24 @@ function buildExampleTerminalEntries(
     }
 }
 
+function buildExampleBeTerminalEntries(
+    grammar: HPSG,
+    input: BeLexemeInput
+): TerminalEntry<FeatureStructure>[] {
+    const words = grammar.buildBeWords(input);
+    return [
+        { terminal: input.base, category: words.base },
+        { terminal: input.firstSingular, category: words.firstSingular },
+        { terminal: input.thirdSingular, category: words.thirdSingular },
+        { terminal: input.nonThirdSingular, category: words.nonThirdSingular },
+        { terminal: input.pastSingular, category: words.pastFirstSingular },
+        { terminal: input.pastSingular, category: words.pastThirdSingular },
+        { terminal: input.pastPlural, category: words.pastNonFirstSingular },
+        { terminal: input.presentParticiple, category: grammar.applyConstantRule(words.presentParticiple) },
+        { terminal: input.pastParticiple, category: grammar.applyConstantRule(words.pastParticiple) },
+    ];
+}
+
 function buildExampleVerbTerminalEntries(
     grammar: HPSG,
     input: VerbLexemeInput
@@ -57,12 +77,12 @@ function buildExampleVerbTerminalEntries(
     const entries: TerminalEntry<FeatureStructure>[] = [
         { terminal: input.base, category: words.nonThirdSingular },
         { terminal: input.thirdSingular, category: words.thirdSingular },
-        { terminal: input.presentParticiple, category: words.presentParticiple },
+        { terminal: input.presentParticiple, category: grammar.applyConstantRule(words.presentParticiple) },
         { terminal: input.pastTense, category: words.pastTense },
-        { terminal: input.pastParticiple, category: words.pastParticiple },
+        { terminal: input.pastParticiple, category: grammar.applyConstantRule(words.pastParticiple) },
     ];
     if (words.passive) {
-        entries.push({ terminal: input.pastParticiple, category: words.passive });
+        entries.push({ terminal: input.pastParticiple, category: grammar.applyConstantRule(words.passive) });
     }
     return entries;
 }

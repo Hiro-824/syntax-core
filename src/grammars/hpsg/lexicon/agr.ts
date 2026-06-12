@@ -1,7 +1,7 @@
 import { FeatureStructure, FeatureStructureInput } from "../../../features/features.js";
 import { TypeSystem } from "../../../features/types.js";
 
-export type AgrType = "agr-cat" | "non-3sing" | "1sing" | "2sing" | "3sing" | "plural";
+export type AgrType = "agr-cat" | "non-3sing" | "non-1sing" | "1sing" | "2sing" | "3sing" | "plural";
 export type AgrPerson = "1st" | "2nd" | "3rd";
 export type AgrNumber = "sg" | "pl";
 export type AgrGender = "fem" | "masc" | "neut";
@@ -32,6 +32,7 @@ function impliedAgrFeatures(type: AgrType): Pick<NormalizedAgrSpec, "per" | "num
             return { num: "pl" };
         case "agr-cat":
         case "non-3sing":
+        case "non-1sing":
             return {};
     }
 }

@@ -3,6 +3,7 @@ import { FeatureStructure } from "../../features/features.js";
 import { TypeSystem } from "../../features/types.js";
 import { buildCompleteLexeme } from "./lexicon/lexeme-builder.js";
 import {
+    BeLexemeInput,
     CountNounLexemeInput,
     LexemeInput,
     MassNounLexemeInput,
@@ -13,6 +14,13 @@ import {
     applySingularNounLexicalRule,
 } from "./lexicon/lexical-rules/nouns.js";
 import {
+    applyBeBaseLexicalRule,
+    applyBeFirstSingularLexicalRule,
+    applyBeNonThirdSingularLexicalRule,
+    applyBePastNonFirstSingularLexicalRule,
+    applyBePastParticipleLexicalRule,
+    applyBePresentParticipleLexicalRule,
+    applyBeThirdSingularLexicalRule,
     applyBaseFormLexicalRule,
     applyNonThirdSingularVerbLexicalRule,
     applyPassiveLexicalRule,
@@ -57,6 +65,18 @@ export type VerbWords = {
     pastTense: FeatureStructure;
     pastParticiple: FeatureStructure;
     passive?: FeatureStructure;
+};
+
+export type BeWords = {
+    base: FeatureStructure;
+    firstSingular: FeatureStructure;
+    thirdSingular: FeatureStructure;
+    nonThirdSingular: FeatureStructure;
+    pastFirstSingular: FeatureStructure;
+    pastThirdSingular: FeatureStructure;
+    pastNonFirstSingular: FeatureStructure;
+    presentParticiple: FeatureStructure;
+    pastParticiple: FeatureStructure;
 };
 
 export type ConstantWords = {
@@ -148,6 +168,34 @@ export class HPSG {
         return applyPassiveLexicalRule(lexeme, this.types);
     }
 
+    applyBeBaseRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBeBaseLexicalRule(lexeme, this.types);
+    }
+
+    applyBeFirstSingularRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBeFirstSingularLexicalRule(lexeme, this.types);
+    }
+
+    applyBeThirdSingularRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBeThirdSingularLexicalRule(lexeme, this.types);
+    }
+
+    applyBeNonThirdSingularRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBeNonThirdSingularLexicalRule(lexeme, this.types);
+    }
+
+    applyBePastNonFirstSingularRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBePastNonFirstSingularLexicalRule(lexeme, this.types);
+    }
+
+    applyBePresentParticipleRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBePresentParticipleLexicalRule(lexeme, this.types);
+    }
+
+    applyBePastParticipleRule(lexeme: FeatureStructure): FeatureStructure {
+        return applyBePastParticipleLexicalRule(lexeme, this.types);
+    }
+
     applyConstantRule(lexeme: FeatureStructure): FeatureStructure {
         return applyConstantLexemeLexicalRule(lexeme, this.types);
     }
@@ -181,6 +229,21 @@ export class HPSG {
             words.passive = this.applyPassiveVerbRule(lexeme);
         }
         return words;
+    }
+
+    buildBeWords(input: BeLexemeInput): BeWords {
+        const lexeme = this.buildLexeme(input);
+        return {
+            base: this.applyBeBaseRule(lexeme),
+            firstSingular: this.applyBeFirstSingularRule(lexeme),
+            thirdSingular: this.applyBeThirdSingularRule(lexeme),
+            nonThirdSingular: this.applyBeNonThirdSingularRule(lexeme),
+            pastFirstSingular: this.applyBeFirstSingularRule(lexeme),
+            pastThirdSingular: this.applyBeThirdSingularRule(lexeme),
+            pastNonFirstSingular: this.applyBePastNonFirstSingularRule(lexeme),
+            presentParticiple: this.applyBePresentParticipleRule(lexeme),
+            pastParticiple: this.applyBePastParticipleRule(lexeme),
+        };
     }
 
     buildConstantWords(input: ConstantLexemeInput): ConstantWords {

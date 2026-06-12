@@ -58,6 +58,16 @@ function runHpsgParseTests(): void {
         { sentence: "see mary", parses: 2 },
         { sentence: "the telescope", parses: 1, topRule: "indexed-right-head" },
         { sentence: "a water", parses: 0 },
+        { sentence: "i am happy", parses: 1 },
+        { sentence: "you are happy", parses: 1 },
+        { sentence: "i are happy", parses: 0 },
+        { sentence: "you am happy", parses: 0 },
+        { sentence: "john is happy", parses: 1 },
+        { sentence: "john is mary", parses: 0 },
+        { sentence: "john is walking", parses: 1 },
+        { sentence: "john is seeing mary", parses: 1 },
+        { sentence: "mary is seen", parses: 1 },
+        { sentence: "john is been", parses: 0 },
     ];
 
     for (const testCase of cases) {
@@ -87,6 +97,7 @@ runConstantLexemeConstraintTests();
 runConstantLexemeLexicalRuleTests();
 runPronounRestrInputTests();
 runAgrNormalizationTests();
+runPredAndBeTests();
 runSynCatGapFeatureTests();
 runIndexedHpsgCombineTests();
 runGapPrincipleTests();
@@ -813,6 +824,85 @@ function runAgrNormalizationTests(): void {
         rejectedInconsistentAgr = true;
     }
     assert(rejectedInconsistentAgr, `bad: expected incompatible AGR and PER to be rejected.`);
+}
+
+function runPredAndBeTests(): void {
+    const grammar = new HPSG();
+    const predicativeAdjective = grammar.buildLexeme({
+        type: "adj-lxm",
+        form: "happy",
+        reln: "happy",
+    });
+    const nonPredicativeAdjective = grammar.buildLexeme({
+        type: "adj-lxm",
+        form: "mere",
+        reln: "mere",
+        pred: "-",
+    });
+    assert(
+        predicativeAdjective.getIn(["SYN", "HEAD", "PRED"])?.getType() === "+",
+        `happy: expected default PRED +.`
+    );
+    assert(
+        nonPredicativeAdjective.getIn(["SYN", "HEAD", "PRED"])?.getType() === "-",
+        `mere: expected explicit PRED -.`
+    );
+
+    const see = buildCompleteLexeme({
+        type: "stv-lxm",
+        base: "see",
+        thirdSingular: "sees",
+        presentParticiple: "seeing",
+        pastTense: "saw",
+        pastParticiple: "seen",
+        reln: "see",
+    }, grammar.types);
+    const presentParticiple = applyPresentParticipleLexicalRule(see, grammar.types);
+    const perfectParticiple = applyPastParticipleLexicalRule(see, grammar.types);
+    const passiveParticiple = applyPassiveLexicalRule(see, grammar.types);
+    assert(
+        presentParticiple.getIn(["SYN", "HEAD", "PRED"])?.getType() === "+",
+        `seeing: expected present participle PRED +.`
+    );
+    assert(
+        perfectParticiple.getIn(["SYN", "HEAD", "PRED"])?.getType() === "-",
+        `seen: expected perfect past participle PRED -.`
+    );
+    assert(
+        passiveParticiple.getIn(["SYN", "HEAD", "PRED"])?.getType() === "+",
+        `seen: expected passive participle PRED +.`
+    );
+
+    const beInput = {
+        type: "be-lxm" as const,
+        base: "be",
+        firstSingular: "am",
+        thirdSingular: "is",
+        nonThirdSingular: "are",
+        pastSingular: "was",
+        pastPlural: "were",
+        presentParticiple: "being",
+        pastParticiple: "been",
+    };
+    const beLexeme = grammar.buildLexeme(beInput);
+    assert(
+        sameFeatureStructure(
+            beLexeme.getIn(["ARG-ST", "FIRST"]),
+            beLexeme.getIn(["ARG-ST", "REST", "FIRST", "SYN", "VAL", "SPR", "FIRST"])
+        ),
+        `be: expected subject and predicative complement SPR first element to be shared.`
+    );
+    assert(
+        beLexeme.getIn(["ARG-ST", "REST", "FIRST", "SYN", "HEAD", "PRED"])?.getType() === "+",
+        `be: expected second ARG-ST element to require PRED +.`
+    );
+
+    const beWords = grammar.buildBeWords(beInput);
+    assert(beWords.firstSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "1sing", `am: expected AGR 1sing.`);
+    assert(beWords.thirdSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "3sing", `is: expected AGR 3sing.`);
+    assert(beWords.nonThirdSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "non-1sing", `are: expected AGR non-1sing.`);
+    assert(beWords.presentParticiple.getIn(["SYN", "HEAD", "PRED"])?.getType() === "+", `being: expected PRED +.`);
+    assert(beWords.pastParticiple.getIn(["SYN", "HEAD", "PRED"])?.getType() === "-", `been: expected PRED -.`);
 }
 
 function runVerbLexicalRuleTests(): void {

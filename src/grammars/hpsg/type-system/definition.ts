@@ -68,6 +68,7 @@ export const typeDefinition = {
     "cntn-lxm": { parent: "cn-lxm" },
     "massn-lxm": { parent: "cn-lxm" },
     "verb-lxm": { parent: "infl-lxm" },
+    "be-lxm": { parent: "infl-lxm" },
     "siv-lxm": { parent: "verb-lxm" },
     "piv-lxm": { parent: "verb-lxm" },
     "tv-lxm": { parent: "verb-lxm" },
@@ -93,7 +94,7 @@ export const typeDefinition = {
     "2sing": { parent: "non-1sing", features: { "PER": "2nd", "NUM": "sg" } },
     "plural": { parent: "non-1sing", features: { "NUM": "pl" } },
 
-    "pos": { parent: "top", features: { "FORM": "form" } },
+    "pos": { parent: "top", features: { "FORM": "form", "PRED": "bool" } },
     "adj": { parent: "pos" },
     "prep": { parent: "pos" },
     "adv": { parent: "pos" },

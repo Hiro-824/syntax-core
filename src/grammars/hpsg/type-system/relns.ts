@@ -23,7 +23,7 @@ export function ensureLexemeInputRelns(types: TypeSystem, input: LexemeInput): v
 function collectLexemeInputRelns(input: LexemeInput): Set<string> {
     const relns = new Set<string>();
 
-    if (input.reln) {
+    if ("reln" in input && input.reln) {
         relns.add(input.reln);
     }
 

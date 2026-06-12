@@ -7,6 +7,7 @@ export type LexemeType =
     | "cntn-lxm"
     | "massn-lxm"
     | "verb-lxm"
+    | "be-lxm"
     | "siv-lxm"
     | "piv-lxm"
     | "tv-lxm"
@@ -85,6 +86,7 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "type": "syn-cat",
                 "HEAD": {
                     "type": "noun",
+                    "PRED": "-",
                     "AGR": {
                         "type": "agr-cat",
                         "PER": "3rd",
@@ -218,6 +220,71 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
             "ARG-ST": {
                 "type": "exp-list-cons",
                 "FIRST": "#subj",
+            },
+        },
+    },
+    "be-lxm": {
+        parent: "infl-lxm",
+        constraints: {
+            "type": "be-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "verb",
+                    "AUX": "+",
+                },
+                "VAL": {
+                    "type": "val-cat",
+                    "SPR": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "_id": "be-subj",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": "noun",
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                    "COMPS": {
+                        "type": "exp-list-cons",
+                        "FIRST": {
+                            "type": "expression",
+                            "_id": "be-pred",
+                            "SYN": {
+                                "type": "syn-cat",
+                                "HEAD": {
+                                    "type": "pos",
+                                    "PRED": "+",
+                                },
+                                "VAL": {
+                                    "type": "val-cat",
+                                    "SPR": {
+                                        "type": "exp-list-cons",
+                                        "FIRST": "#be-subj",
+                                        "REST": "exp-list-empty",
+                                    },
+                                },
+                            },
+                        },
+                        "REST": "exp-list-empty",
+                    },
+                },
+            },
+            "SEM": {
+                "type": "sem-cat",
+                "MODE": "prop",
+                "RESTR": "pred-list-empty",
+            },
+            "ARG-ST": {
+                "type": "exp-list-cons",
+                "FIRST": "#be-subj",
+                "REST": {
+                    "type": "exp-list-cons",
+                    "FIRST": "#be-pred",
+                    "REST": "exp-list-empty",
+                },
             },
         },
     },
@@ -517,6 +584,7 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "type": "syn-cat",
                 "HEAD": {
                     "type": "noun",
+                    "PRED": "-",
                     "AGR": {
                         "type": "3sing",
                         "PER": "3rd",
@@ -531,6 +599,7 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "type": "syn-cat",
                 "HEAD": {
                     "type": "noun",
+                    "PRED": "-",
                     "AGR": {
                         "type": "3sing",
                         "NUM": "sg",
@@ -551,6 +620,7 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "type": "syn-cat",
                 "HEAD": {
                     "type": "noun",
+                    "PRED": "-",
                 },
             },
             "ARG-ST": "exp-list-empty",
@@ -626,6 +696,16 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
                 "REST": "exp-list-empty",
             },
         },
+        defaults: {
+            "type": "adj-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "adj",
+                    "PRED": "+",
+                },
+            },
+        },
     },
     "adv-lxm": {
         parent: "const-lxm",
@@ -633,7 +713,10 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
             "type": "adv-lxm",
             "SYN": {
                 "type": "syn-cat",
-                "HEAD": "adv",
+                "HEAD": {
+                    "type": "adv",
+                    "PRED": "-",
+                },
                 "VAL": {
                     "type": "val-cat",
                     "MOD": {
@@ -661,7 +744,10 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
             "type": "det-lxm",
             "SYN": {
                 "type": "syn-cat",
-                "HEAD": "det",
+                "HEAD": {
+                    "type": "det",
+                    "PRED": "-",
+                },
                 "VAL": {
                     "type": "val-cat",
                     "COMPS": "exp-list-empty",
@@ -689,7 +775,10 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
             "type": "argmkp-lxm",
             "SYN": {
                 "type": "syn-cat",
-                "HEAD": "prep",
+                "HEAD": {
+                    "type": "prep",
+                    "PRED": "-",
+                },
                 "VAL": {
                     "type": "val-cat",
                     "SPR": "exp-list-empty",
@@ -737,7 +826,10 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
             "type": "predp-lxm",
             "SYN": {
                 "type": "syn-cat",
-                "HEAD": "prep",
+                "HEAD": {
+                    "type": "prep",
+                    "PRED": "+",
+                },
                 "VAL": {
                     "type": "val-cat",
                     "SPR": {
@@ -808,6 +900,16 @@ export const lexemeConstraintStages: Record<LexemeType, LexemeConstraintStage> =
         parent: "const-lxm",
         constraints: {
             "type": "part-lxm",
+        },
+        defaults: {
+            "type": "part-lxm",
+            "SYN": {
+                "type": "syn-cat",
+                "HEAD": {
+                    "type": "pos",
+                    "PRED": "-",
+                },
+            },
         },
     },
 };
