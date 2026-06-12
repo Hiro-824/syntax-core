@@ -48,7 +48,11 @@ function runHpsgParseTests(): void {
         { sentence: "a girls", parses: 0 },
         { sentence: "i see myself", parses: 2 },
         { sentence: "i see yourself", parses: 0 },
+        { sentence: "i see i", parses: 0 },
+        { sentence: "i see me", parses: 0 },
+        { sentence: "i see you", parses: 2 },
         { sentence: "you see yourself", parses: 2 },
+        { sentence: "you see myself", parses: 0 },
         { sentence: "me see myself", parses: 0 },
         { sentence: "see mary", parses: 2 },
         { sentence: "the telescope", parses: 1, topRule: "indexed-right-head" },
@@ -849,6 +853,10 @@ function runVerbLexicalRuleTests(): void {
     assert(
         thirdSingular.getIn(["ARG-ST", "FIRST", "SYN", "HEAD", "CASE"])?.getType() === "nom",
         `third singular see: expected subject CASE nom.`
+    );
+    assert(
+        thirdSingular.getIn(["ARG-ST", "REST", "FIRST", "SYN", "HEAD", "CASE"])?.getType() === "acc",
+        `third singular see: expected object CASE acc.`
     );
     assert(
         nonThirdSingular.getIn(["SYN", "HEAD", "AGR"])?.getType() === "non-3sing",

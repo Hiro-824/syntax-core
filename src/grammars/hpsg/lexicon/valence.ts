@@ -31,6 +31,13 @@ export function setValenceFromArgSt(synsem: FeatureStructure, types: TypeSystem,
         throw new Error(`Cannot apply ${context}: ARG-ST must contain a subject.`);
     }
 
+    for (const argument of args.slice(1)) {
+        const head = argument.getIn(["SYN", "HEAD"]);
+        if (head && types.isSubtype(head.getType(), "noun")) {
+            head.add("CASE", new FeatureStructure("acc"), types);
+        }
+    }
+
     const val = synsem.getIn(["SYN", "VAL"]);
     if (!val) {
         throw new Error(`Cannot apply ${context}: synsem is missing SYN.VAL.`);

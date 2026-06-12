@@ -24,6 +24,30 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
         return created;
     };
 
+    const firstSecondPersonIndexes = new Map<string, FeatureStructure>();
+    for (const arg of args) {
+        const person = arg.getIn(["SYN", "HEAD", "AGR", "PER"])?.dereference().getType();
+        if (person !== "1st" && person !== "2nd") continue;
+
+        const index = getOrCreateIndex(arg);
+        const existing = firstSecondPersonIndexes.get(person);
+        if (existing) {
+            FeatureStructure.unify(existing, index, types);
+        } else {
+            firstSecondPersonIndexes.set(person, index);
+        }
+    }
+
+    const firstPersonIndex = firstSecondPersonIndexes.get("1st");
+    const secondPersonIndex = firstSecondPersonIndexes.get("2nd");
+    if (
+        firstPersonIndex &&
+        secondPersonIndex &&
+        firstPersonIndex.dereference() === secondPersonIndex.dereference()
+    ) {
+        throw new Error("First- and second-person arguments must have distinct indexes.");
+    }
+
     for (let i = 0; i < args.length; i++) {
         const ana = args[i];
 
@@ -59,6 +83,23 @@ export function enforceBindingTheory(mother: FeatureStructure, types: TypeSystem
 
         if (!antecedent) {
             throw new Error(`No antecedent for anaphor in ARG-ST (AGR=${anaAgrType}).`);
+        }
+    }
+
+    for (let i = 1; i < args.length; i++) {
+        const argument = args[i]!;
+        const mode = argument.getIn(["SEM", "MODE"])?.dereference().getType();
+        const isAnaphor = mode === "ana";
+        const index = getOrCreateIndex(argument).dereference();
+        const sharesPriorIndex = args
+            .slice(0, i)
+            .some(prior => getOrCreateIndex(prior).dereference() === index);
+
+        if (sharesPriorIndex && !isAnaphor) {
+            throw new Error("A locally coindexed argument must be an anaphor.");
+        }
+        if (!sharesPriorIndex && isAnaphor) {
+            throw new Error("A local anaphor must be coindexed with a preceding argument.");
         }
     }
 }
